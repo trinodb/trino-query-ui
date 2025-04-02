@@ -1,0 +1,41 @@
+{
+  "name": "precise",
+  "homepage": ".",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "antlr4ng": "antlr4ng -visitor -listener -Dlanguage=TypeScript -o src/generated/lexer/SqlBase.g4 trino/SqlBase.g4"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "antlr4-c3": "^3.4.1",
+    "antlr4ng": "^3.0.4",
+    "lucide-react": "^0.460.0",
+    "precise": "file:",
+    "react": "^18.2.0",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
+    "react-dom": "^18.2.0",
+    "sql-formatter": "^15.5.2",
+    "uuidv4": "^6.2.13"
+  },
+  "devDependencies": {
+    "@types/http-proxy-middleware": "^1.0.0",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "antlr4ng-cli": "^2.0.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "typescript": "^5.2.2",
+    "vite": "^6.2.4"
+  }
+}

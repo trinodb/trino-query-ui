@@ -1,0 +1,204 @@
+.filter-input {
+  width: 95%;
+  padding: 0.5em;
+  margin: 0.5em;
+  border: 1px solid #2b2b2b;
+  border-radius: 3px;
+  background-color: #181818;
+  color: #9d9d9d;
+  font-size: small;
+}
+
+/* A plain text with no obvious element of it being a button */
+.reload-button {
+  border: 0;
+  background-color: transparent;
+  color: #bbb;
+  right: 20px;
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  font-size: 2em;
+}
+
+/* catalog explorer */
+.viewer_catalog {
+  font-weight: bold;
+  color: #fff;  
+  cursor: pointer;
+}
+
+.catalog-content {
+  padding-left: 0.5em;
+}
+
+.viewer_catalog:hover {
+  color: #fff;
+  background-color: #689CC5;
+}
+
+.viewer_catalog_body {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: #444 1px solid;
+}
+
+.viewer_schema {
+  font-weight: regular;
+  color: #bbb;  
+  cursor: pointer;
+}
+
+.viewer_schema:hover {
+  color: #fff;
+  background-color: #416480;
+}
+
+.viewer-schema-body {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: #444 1px solid;
+}
+
+.viewer_table {
+  font-weight: regular;
+  color: #999;
+  cursor: pointer;
+  position: relative;
+  padding-right: 30px; 
+}
+
+.viewer_samplevalue {
+  color: #999;
+}
+
+.viewer_table_body {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: #888 1px solid;
+  padding-right: 10px;
+}
+
+.viewer_samplevalues_body {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: #444 1px solid;
+}
+
+.viewer_table:hover {
+  color: #fff;
+  background-color: #334e64;
+}
+
+/* monospaced text */
+.viewer_column {
+  font-family: monospace;
+  cursor: pointer;
+}
+
+.viewer_column:hover {
+  color: #fff;
+  background-color: #334e64;
+  cursor: pointer;
+}
+
+.loading-message {
+  color: #999;
+  font-size: x-small;
+}
+
+.table-name {
+  padding-right: 0.25em;
+}
+
+.schema-name {
+  padding-right: 0.25em;
+}
+
+.catalog-viewer {
+  position: relative;
+}
+
+.catalog-viewer-header {
+  padding-bottom: 0.5em;
+}
+
+.catalog-name {
+  padding-right: 0.25em;
+}
+
+.column-name {
+  padding-right: 0.25em;
+}
+
+.expand-indicator {
+  color: #444;
+  font-size: x-small;
+  padding-left: 0.25em;
+}
+
+/* Add to catalogviewer.css */
+.search-container {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+}
+
+/* input inside the search container needs to have text cursor */
+.search-container > .filter-input {
+  cursor: text !important;
+}
+
+.clear-search {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-search:hover {
+  opacity: 1;
+}
+
+.filter-input {
+  padding-right: 28px; /* Make room for the clear button */
+}
+
+.expand-indicator-has-matches {
+  color: #689CC5;  /* Light blue to match the hover color */
+}
+
+/* Add to catalogviewer.css */
+.generate-query-button {
+  margin-left: auto;
+  color: #666;
+  cursor: pointer;
+  padding: 2px 8px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.generate-query-button:hover {
+  color: #fff;
+}
+
+/* Make viewer rows display as flex to accommodate the button on the right */
+.viewer_catalog, .viewer_schema, .viewer_table {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Add spacing between the expand indicator and text */
+.catalog-name, .schema-name, .table-name {
+  margin-right: 0.5em;
+}

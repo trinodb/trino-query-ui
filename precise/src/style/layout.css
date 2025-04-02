@@ -1,0 +1,144 @@
+/**
+ * layout.css
+ * Layout structures and positioning styles
+ */
+
+/* Page Layout */
+.page {
+    width: 100%;
+  }
+  
+  /* Grid Layout for page with collapsible sidebar */
+  .pagegrid {
+    display: grid;
+    grid-template-columns: 0vw 100vw;
+    transition: grid-template-columns 0.1s; 
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* For expanded layout */
+  .catalog-expanded {
+    /* Will be applied via JavaScript */
+  }
+  
+  /* For collapsed layout */
+  .catalog-collapsed {
+    /* Will be applied via JavaScript */
+  }
+  
+  /* Catalog Sidebar */
+  .catalog-container {
+    width: auto;
+    height: calc(100vh);
+  }
+  
+  .catalog-wrapper {
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: auto;
+    background-color: var(--dark-gray);
+    height: calc(100vh - 3em);
+    scrollbar-color: var(--medium-gray) var(--dark-gray);
+  }
+  
+  /* Branding and Header */
+  .branding-header {
+    background: var(--brand-gradient);
+    height: 3em;
+    width: 100%;
+    position: fixed;
+  }
+  
+  .branding-padder {
+    height: 3em;
+  }
+  
+  /* Card Layout */
+  .card {
+    margin: 0px;
+  }
+  
+  /* Editor and Results Layout */
+  .query-editor {
+    margin: 0px;
+    padding: 0px;
+  }
+  
+  .editorspace {
+    /* Space for the Monaco editor */
+  }
+  
+  .resultSetPort {
+    padding-top: 0em;
+  }
+  
+  /* Spacers and Common Layout Elements */
+  .spacer {
+    margin-bottom: 1em;
+  }
+  
+  /* Status Layouts */
+  .status {
+    display: grid;
+    grid-template-columns: 60px 60px auto;
+    align-items: left;
+  }
+  
+  .progress-bar-grid {
+    display: grid;
+    grid-template-columns: 90fr 10fr;
+    align-items: center;
+  }
+  
+  /* Query Status Table Layout */
+  .query-status-table {
+    border-spacing: 0px;
+  }
+  
+  .query-status-table th {
+    padding: 4px 8px 4px 8px;
+    color: var(--muted-text-color);
+    font-size: small;
+    padding-right: 1em;
+    text-align: left;
+  }
+  
+  /* Image size modifiers */
+  .full-height-image {
+    height: 100%;
+    width: auto;
+    object-fit: contain;
+  }
+  
+  .half-height-image {
+    height: 50%;
+    width: auto;
+    object-fit: contain;
+  }
+  
+  /* Fixes for scrollable areas */
+  .scrollable {
+    overflow-y: auto;
+    overflow-x: auto;
+    height: 40vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Catalog container height */
+  .catalog-container {
+    width: auto;
+    height: calc(100vh);
+  }
+  
+  .catalog-wrapper {
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: auto;
+    background-color: var(--dark-gray);
+    height: calc(100vh - 3em);
+    scrollbar-color: var(--medium-gray) var(--dark-gray);
+  }
