@@ -1,0 +1,231 @@
+/**
+ * control.css
+ * Styles for control elements and interactions
+ */
+
+/* Basic Interactive Elements */
+.clickable {
+  cursor: pointer;
+}
+
+.selectable {
+  user-select: text;
+}
+
+.non-selectable {
+  user-select: none;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--highlight-blue);
+}
+
+/* Tab Controls */
+.tab-container {
+  display: flex;
+  border-bottom: 1px solid var(--dark-gray);
+  background-color: var(--subtle-darker-accent-color);
+}
+
+.tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-right: 1px solid var(--dark-gray);
+  user-select: none;
+}
+
+.tab.active {
+  background-color: var(--lighter-accent-color);
+  border-bottom: 2px solid var(--highlight-blue);
+}
+
+.tab:hover:not(.active) {
+  background-color: var(--subtle-lighter-accent-color);
+}
+
+/* Editor Controls */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  background-color: var(--subtle-darker-accent-color);
+  border-bottom: 1px solid var(--dark-gray);
+}
+
+.toolbar-button {
+  background: none;
+  border: none;
+  color: var(--muted-text-color);
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.toolbar-button:hover {
+  background-color: var(--subtle-lighter-accent-color);
+  color: var(--white);
+}
+
+.toolbar-button.active {
+  background-color: var(--lighter-accent-color);
+  color: var(--white);
+}
+
+/* Resizable Elements */
+.resizable {
+  position: relative;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 100%;
+  right: 0;
+  top: 0;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.resize-handle-horizontal {
+  width: 100%;
+  height: 10px;
+  left: 0;
+  bottom: 0;
+  cursor: row-resize;
+}
+
+/* Context Menus and Dropdowns */
+.context-menu {
+  position: absolute;
+  background-color: var(--lighter-accent-color);
+  border: 1px solid var(--dark-gray);
+  border-radius: 4px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background-color: var(--subtle-lighter-accent-color);
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: var(--dark-gray);
+  margin: 4px 0;
+}
+
+/* parent type of small control buttons */
+.small-rounded-button {
+  background-color: #111;
+  color: #7d7d7d;
+  border-color: #689CC5;
+  font-size: large;
+  border-radius: 10px;
+  padding: 0.5em;
+  cursor: pointer;
+  height: auto;
+  text-align: center;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
+.small-rounded-button:hover {
+  background-color: #333;
+  /* animate */
+  transition: background-color 0.25s;
+}
+
+/* input box with no border and transparent background, no outline when selected */
+.query-title {
+  padding-left: 1em;
+  color: #61dafb;
+  font-weight: 300;
+  font-size: 1.5em;
+  border: none;
+  background-color: transparent;
+  outline: none;
+}
+
+.card-header {
+  padding-top: 0.2em;
+  padding-left: 0.2em;
+  background-color: #1E1E1E;
+  right: 0px;
+  height: 3em;
+}
+
+/* grid containing execute query and title text */
+.card-header-grid {
+  display: grid;
+  grid-template-columns: 4em auto 10em 10em 3.75em 5px 3.75em 5px 3.75em 5px 3.75em;
+  padding-right: 20px; /* to account for scrollbar */
+}
+
+.query-run-button {
+  background-color: #111;
+  color: #689CC5;
+  border-color: #689CC5;
+  font-size: large;
+  border-radius: 10px;
+  padding: 0.5em;
+  cursor: pointer;
+  width: 4em;
+  height: auto;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.query-run-button:hover {
+  background-color: var(--dark-accent);
+  color: var(--white);
+}
+
+.query-control-button {
+  background-color: #111;
+  color: #689CC5;
+  border-color: #3f5f79;
+  font-size: large;
+  border-radius: 10px;
+  padding: 0.5em;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.query-control-button:hover {
+  background-color: var(--dark-accent);
+  color: var(--white);
+}
+
+
+.catalog-setting {
+  /* align text right */
+  text-align: right;
+}
+
+/* Catalog and schema settings */
+.catalog-setting,
+.schema-setting {
+    padding-left: 1em;
+    color: #777;
+    font-weight: 300;
+    font-size: 1em;
+    border: none;
+    background-color: transparent;
+    outline: none;
+  }
+
+/* hover over the catalog setting and schema setting to change the color to white */
+.catalog-setting:hover, .schema-setting:hover {
+  color: #fff;
+  transition: background-color 0.25s, color 0.25s;
+}

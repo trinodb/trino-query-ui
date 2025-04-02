@@ -1,0 +1,94 @@
+/**
+ * normalize.css
+ * Base styles and resets for consistent rendering
+ */
+
+/* Reset margins and paddings */
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+  }
+  
+  body {
+    overflow-y: auto;
+  }
+  
+  #root {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #fff;
+    background-color: #121212;
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Basic elements styling */
+  a {
+    font-weight: 500;
+    color: var(--link-color);
+    text-decoration: inherit;
+  }
+  
+  a:hover {
+    color: var(--link-hover-color);
+  }
+  
+  button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: #1a1a1a;
+    cursor: pointer;
+    transition: border-color 0.25s;
+  }
+  
+  button:hover {
+    border-color: var(--border-color);
+  }
+  
+  button:focus,
+  button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+  
+  /* Tables */
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--text-color);
+  }
+  
+  /* Basic animations */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @keyframes logo-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    a:nth-of-type(2) .logo {
+      animation: logo-spin infinite 20s linear;
+    }
+  }

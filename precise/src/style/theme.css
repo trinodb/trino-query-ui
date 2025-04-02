@@ -1,0 +1,66 @@
+/**
+ * theme.css
+ * Contains all theme variables and color definitions
+ */
+
+ :root {
+  /* Base typography */
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Color scheme */
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  /* Brand Colors */
+  --bytes-color: #1C364D;
+  --bytes-color-partial-transparent: rgba(28, 54, 77, 0.5);
+  --rows-color: #0C61A6;
+  --rows-color-partial-transparent: rgba(12, 97, 166, 0.5);
+  --splits-color: #564682;
+  --splits-color-partial-transparent: rgba(86, 70, 130, 0.5);
+  
+  /* UI Colors */
+  --link-color: #5bc0de;
+  --link-hover-color: #747bff;
+  --border-color: #646cff;
+  --subtle-lighter-accent-color: #1e1e1e;
+  --lighter-accent-color: #2c2c2c;
+  --subtle-darker-accent-color: #131313;
+  
+  /* Text Colors */
+  --muted-text-color: #888;
+  --white: #fff;
+  
+  /* Gradient */
+  --brand-gradient: linear-gradient(45deg, #564682, #1C2F44, #1C364D, #0C61A6);
+  
+  /* Structural Colors */
+  --dark-gray: #333;
+  --medium-gray: #555;
+  --light-gray: #666; 
+  --very-dark-gray: #111;
+  --dark-accent: #222;
+  --highlight-blue: #689CC5;
+  
+  /* Success/Error States */
+  --success-color: rgba(1, 123, 15, 0.5);
+  --error-color-subtle: #999;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}

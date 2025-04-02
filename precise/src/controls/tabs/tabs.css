@@ -1,0 +1,193 @@
+.tabs-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-top: 0px; /* Tabs overlap the control bar, better fix might be to prevent the animation from doing this */
+}
+
+.tabs {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  overflow-x: auto;
+  /* disable scrollbars */
+  scrollbar-width: none;
+  height: 2.5em;
+}
+
+.controltab {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+  background-color: #000000;
+  border-left: 1px solid #2b2b2b;
+  border-top: 1px solid #2b2b2b;
+  border-radius: 3px;
+  font-size: xx-large;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  color: #ffffff;
+  font-size: small;
+}
+
+.controltab:hover, .tabs-ellipses-menu:hover {
+  background-color: #2b2b2b;
+}
+
+.tab-item,
+.tab-item-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-left: 1px solid #2b2b2b;
+  border-top: 1px solid #2b2b2b;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  cursor: pointer;
+  box-sizing: border-box;
+  font-size: small;
+  max-width: 200px;
+  animation: tabPopup 0.3s ease-out;
+}
+
+@keyframes tabPopup {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.tab-item {
+  background-color: #101010;
+  color: #9d9d9d;
+}
+
+.tab-item-selected {
+  background-color: #1F1F1F;
+  color: #dddddd;
+}
+
+.tab-item:hover,
+.tab-item-selected:hover {
+  background-color: #2b2b2b;
+}
+
+.tab-content {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 5px;
+}
+
+.tab-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  color: inherit;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  margin-left: 0px;
+}
+
+.tab-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.close-button:hover {
+  color: #ff4444;
+}
+
+.tab-list-button-and-menu {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  z-index: 1000;
+}
+
+.ellipses-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-right: 20px;
+  background-color: #000000;
+  border: none;
+  border-left: 1px solid #2b2b2b;
+  border-top: 1px solid #2b2b2b;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 18px;
+  outline: none;
+}
+
+.ellipses-button:hover {
+  background-color: #2b2b2b;
+}
+
+.tabs-ellipses-menu-content {
+  position: fixed;
+  right: 10px;
+  top: 130px;
+  background-color: #101010;
+  min-width: 300px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1001;
+  max-height: calc(100vh - 50px); 
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #2b2b2b;
+  border-radius: 3px;
+}
+
+.tabs-ellipses-menu-content input {
+  width: calc(100% - 20px);
+  margin: 10px;
+  padding: 5px;
+  background-color: #181818;
+  border: 1px solid #2b2b2b;
+  color: #9d9d9d;
+  font-size: small;
+}
+
+.tabs-ellipses-menu-content .tab-list {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.tabs-ellipses-menu-content .tab-item {
+  display: block;
+  padding: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  border-radius: 0;
+}
+
+.tabs-ellipses-menu-content .tab-item:hover {
+  background-color: #2b2b2b;
+}
