@@ -78,8 +78,7 @@ const CatalogViewerColumn: React.FC<CatalogViewerColumnProps> = ({
         return (
             <div key={index} className="viewer_samplevalue" title={value}>
                 {displayValue}
-                <CopyLink 
-                    value={value} 
+                <CopyLink
                     copy={() => navigator.clipboard.writeText(value)} 
                 />
             </div>
