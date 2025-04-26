@@ -1,0 +1,37 @@
+name: Publish Package to npmjs
+
+on:
+  release:
+    types: [created]
+  pull_request:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: precise
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      # This step is a placeholder for publishing to npm.
+      # The project structure and Node configuration will need to be adjusted
+      # before this can be enabled and work as intended.
+      - name: Publish to npm
+        if: github.event_name == 'release'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
