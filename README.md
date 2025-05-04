@@ -138,6 +138,16 @@ The local URL will be be displayed which you can open in your browser.
 
 To build parser: `npm run antlr4ng`, as configured in **package.json**
 
+### Linting and code formatting
+
+To check code quality and formatting:
+
+```shell
+  npm run check
+```
+
+This command runs both eslint and prettier, as defined in **package.json**
+
 ## Philosophy
 
 This UI's purpose is to provide an environment where once the cluster is stood up, executing queries and exploring data sets can be done right away. The idended use cases are:
