@@ -1,12 +1,11 @@
 class NamedQuery {
-
-    public name: string;
-    public node: any;
+    public name: string
+    public node: any
 
     constructor(name: string, node: any) {
-        this.name = name;
-        this.node = node;
+        this.name = name
+        this.node = node
     }
 }
 
-export default NamedQuery;
+export default NamedQuery

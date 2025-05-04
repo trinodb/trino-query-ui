@@ -1,12 +1,11 @@
-
 // Define a generic TabInfo interface
 interface TabInfo {
-    id: string;
-    title: string;
-    isPinned: boolean;
+    id: string
+    title: string
+    isPinned: boolean
 }
 
-export default TabInfo;
+export default TabInfo
 
 // import { v4 as uuidv4 } from 'uuid';
 

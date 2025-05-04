@@ -9,4 +9,4 @@ import './style/query-editor.css'
 import './style/results.css'
 import './style/control.css'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />)
