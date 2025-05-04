@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import Table from '../../schema/Table';
-import SchemaProvider from '../../sql/SchemaProvider';
-import TableReference from '../../schema/TableReference';
-import CatalogViewerColumn from './CatalogViewerColumn';
-import { buildPath } from './ViewerState';
-import './catalogviewer.css';
-import { ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import Table from '../../schema/Table'
+import SchemaProvider from '../../sql/SchemaProvider'
+import TableReference from '../../schema/TableReference'
+import CatalogViewerColumn from './CatalogViewerColumn'
+import { buildPath } from './ViewerState'
+import './catalogviewer.css'
+import { ChevronRight } from 'lucide-react'
 
 interface CatalogViewerTableProps {
-    tableRef: TableReference;
-    filterText: string;
-    isExpanded: boolean;
-    isVisible: (path: string) => boolean;
-    hasMatchingChildren: (path: string) => boolean;
-    onToggle: (path: string) => Promise<void>;
-    onGenerateQuery?: (queryType: string, tableRef: TableReference) => void;
+    tableRef: TableReference
+    filterText: string
+    isExpanded: boolean
+    isVisible: (path: string) => boolean
+    hasMatchingChildren: (path: string) => boolean
+    onToggle: (path: string) => Promise<void>
+    onGenerateQuery?: (queryType: string, tableRef: TableReference) => void
 }
 
 const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
@@ -23,19 +23,13 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     isExpanded,
     isVisible,
     onToggle,
-    onGenerateQuery
+    onGenerateQuery,
 }) => {
-    const [table, setTable] = useState<Table>(() => 
-        new Table(tableRef.tableName)
-    );
+    const [table, setTable] = useState<Table>(() => new Table(tableRef.tableName))
 
-    const [isLoadingColumns, setIsLoadingColumns] = useState(false);
+    const [isLoadingColumns, setIsLoadingColumns] = useState(false)
 
-    const tablePath = buildPath.table(
-        tableRef.catalogName,
-        tableRef.schemaName,
-        tableRef.tableName
-    );
+    const tablePath = buildPath.table(tableRef.catalogName, tableRef.schemaName, tableRef.tableName)
 
     // Load columns when expanded OR when there's an active filter
     useEffect(() => {
@@ -43,47 +37,42 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
             console.log(`Loading table data for ${tableRef.tableName}`, {
                 isExpanded,
                 filterText,
-                hasColumns: table.getColumns().length > 0
-            });
+                hasColumns: table.getColumns().length > 0,
+            })
 
-            table.setLoading(true);
+            table.setLoading(true)
             SchemaProvider.getTableWithCache(tableRef, (loadedTable: Table) => {
                 console.log(`Table data loaded for ${tableRef.tableName}`, {
-                    columnCount: loadedTable.getColumns().length
-                });
-                setTable(loadedTable);
-            });
+                    columnCount: loadedTable.getColumns().length,
+                })
+                setTable(loadedTable)
+            })
         }
-    }, [isExpanded, filterText, tableRef, table]);
+    }, [isExpanded, filterText, tableRef, table])
 
     // Check visibility using the passed down helper
     if (!isVisible(tablePath)) {
-        return null;
+        return null
     }
 
     const handleGenerateQuery = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent toggling expansion
+        e.stopPropagation() // Prevent toggling expansion
         if (onGenerateQuery) {
-            onGenerateQuery('SELECT', tableRef);
+            onGenerateQuery('SELECT', tableRef)
         }
-    };
+    }
 
     return (
         <div className="table-section">
             <div className="table-header">
-                <div 
-                    className="viewer_table" 
-                    onClick={() => onToggle(tablePath)}
-                >
+                <div className="viewer_table" onClick={() => onToggle(tablePath)}>
                     <span className="table-name">{table.getName()}</span>
                     <span className="helper-text">table</span>
-                    <span className="expand-indicator">
-                        {isExpanded ? '▼' : '▶'}
-                    </span>
-                    
+                    <span className="expand-indicator">{isExpanded ? '▼' : '▶'}</span>
+
                     {onGenerateQuery && (
-                        <div 
-                            className="generate-query-button" 
+                        <div
+                            className="generate-query-button"
                             onClick={handleGenerateQuery}
                             title="Generate SELECT query for this table"
                         >
@@ -99,17 +88,18 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
                         <div className="error-message">{table.getError()}</div>
                     ) : table.getColumns().length === 0 && isExpanded && table.isLoading() ? (
                         <div className="loading-message">Loading columns...</div>
-                    ) : table.getColumns().length > 0 && (
-                        table.getColumns().map(column => {
+                    ) : (
+                        table.getColumns().length > 0 &&
+                        table.getColumns().map((column) => {
                             const columnPath = buildPath.column(
                                 tableRef.catalogName,
                                 tableRef.schemaName,
                                 tableRef.tableName,
                                 column.getName()
-                            );
-                            
+                            )
+
                             if (!isVisible(columnPath)) {
-                                return null;
+                                return null
                             }
 
                             return (
@@ -121,13 +111,13 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
                                     isVisible={isVisible}
                                     onToggle={onToggle}
                                 />
-                            );
+                            )
                         })
                     )}
                 </div>
             )}
         </div>
-    );
-};
+    )
+}
 
-export default CatalogViewerTable;
+export default CatalogViewerTable

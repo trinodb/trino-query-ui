@@ -1,58 +1,50 @@
-import React from 'react';
-import QueryEditor from './QueryEditor';
-import ResultSet from './ResultSet';
-import Queries from './schema/Queries';
-import QueryInfo from './schema/QueryInfo';
-import AsyncTrinoClient from './AsyncTrinoClient';
-import { 
-  Play, 
-  StopCircle, 
-  Link, 
-  Plus, 
-  FileEdit, 
-  MinusSquare, 
-  PlusSquare 
-} from 'lucide-react';
-import './style/components.css';
-import './style/query-editor.css';
+import React from 'react'
+import QueryEditor from './QueryEditor'
+import ResultSet from './ResultSet'
+import Queries from './schema/Queries'
+import QueryInfo from './schema/QueryInfo'
+import AsyncTrinoClient from './AsyncTrinoClient'
+import { Play, StopCircle, Link, Plus, FileEdit, MinusSquare, PlusSquare } from 'lucide-react'
+import './style/components.css'
+import './style/query-editor.css'
 
 interface QueryCellState {
-    results: any[];
-    columns: any[];
-    response: any;
-    errorMessage: string;
-    currentQuery: QueryInfo;
-    runningQuery: QueryInfo | undefined;
+    results: any[]
+    columns: any[]
+    response: any
+    errorMessage: string
+    currentQuery: QueryInfo
+    runningQuery: QueryInfo | undefined
 }
 
 interface QueryCellProps {
-    queries: Queries;
+    queries: Queries
 }
 
 class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
-    private queryRunner: AsyncTrinoClient;
-    private isQueryCollapsed: boolean = false;
+    private queryRunner: AsyncTrinoClient
+    private isQueryCollapsed: boolean = false
 
     constructor(props: QueryCellProps) {
-        super(props);
+        super(props)
         this.state = {
             results: [],
             columns: [],
             response: {},
             errorMessage: '',
             currentQuery: this.props.queries.getCurrentQuery(),
-            runningQuery: undefined
-        };
-        this.queryRunner = new AsyncTrinoClient();
-        this.setupQueryRunner();
+            runningQuery: undefined,
+        }
+        this.queryRunner = new AsyncTrinoClient()
+        this.setupQueryRunner()
     }
 
     componentDidMount() {
-        this.props.queries.addChangeListener(this.handleQueriesChange);
+        this.props.queries.addChangeListener(this.handleQueriesChange)
     }
 
     componentWillUnmount() {
-        this.props.queries.removeChangeListener(this.handleQueriesChange);
+        this.props.queries.removeChangeListener(this.handleQueriesChange)
     }
 
     shouldComponentUpdate(nextProps: QueryCellProps, nextState: QueryCellState) {
@@ -65,45 +57,48 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             this.state.runningQuery !== nextState.runningQuery ||
             this.state.currentQuery !== nextState.currentQuery ||
             this.state.currentQuery.title !== nextState.currentQuery.title
-        );
+        )
     }
 
     handleQueriesChange = () => {
-        this.setState({ currentQuery: this.props.queries.getCurrentQuery() });
+        this.setState({ currentQuery: this.props.queries.getCurrentQuery() })
     }
 
     setupQueryRunner() {
         this.queryRunner.SetResults = (newResults: any[]) => {
-            this.setState({ results: newResults });
-        };
+            this.setState({ results: newResults })
+        }
 
         this.queryRunner.SetColumns = (newColumns: any[]) => {
-            this.setState({ columns: newColumns });
-        };
+            this.setState({ columns: newColumns })
+        }
 
         this.queryRunner.SetStatusCallback((setStatus: (newStatus: any) => any) => {
-            this.setState({ response: setStatus });
-        });
+            this.setState({ response: setStatus })
+        })
 
         this.queryRunner.SetErrorMessageCallback((newErrorMessage: string) => {
-            this.setState({ errorMessage: newErrorMessage });
-        });
+            this.setState({ errorMessage: newErrorMessage })
+        })
 
         this.queryRunner.SetStopped = () => {
-            this.SetStoppedState();
-        };
+            this.SetStoppedState()
+        }
 
         this.queryRunner.SetStarted = () => {
-            this.QueryStarted();
-        };
+            this.QueryStarted()
+        }
 
         this.queryRunner.SetHeadersCallback((catalog: string | null, schema: string | null) => {
-            this.props.queries.updateQuery(this.state.currentQuery.id, { catalog: catalog ?? undefined, schema: schema ?? undefined });
-        });
+            this.props.queries.updateQuery(this.state.currentQuery.id, {
+                catalog: catalog ?? undefined,
+                schema: schema ?? undefined,
+            })
+        })
     }
 
     setRunningQueryId = (queryId: string | null) => {
-        this.setState({ runningQuery: this.state.currentQuery });
+        this.setState({ runningQuery: this.state.currentQuery })
     }
 
     handleQueryChange = (newQuery: string) => {
@@ -111,47 +106,54 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     handleTitleChange = (title: string) => {
-        this.props.queries.updateQuery(this.state.currentQuery.id, { title: title });
+        this.props.queries.updateQuery(this.state.currentQuery.id, { title: title })
     }
 
     ClearResults() {
-        this.setState({ results: [], columns: [], errorMessage: '' });
+        this.setState({ results: [], columns: [], errorMessage: '' })
     }
 
     QueryStarted() {
-        this.ClearResults();
-        this.setRunningQueryId(this.state.currentQuery.id);
-        this.forceUpdate(); // To ensure the play/stop icon updates
+        this.ClearResults()
+        this.setRunningQueryId(this.state.currentQuery.id)
+        this.forceUpdate() // To ensure the play/stop icon updates
     }
 
     SetStoppedState() {
-        this.forceUpdate(); // To ensure the play/stop icon updates
+        this.forceUpdate() // To ensure the play/stop icon updates
     }
 
     Execute() {
-        this.queryRunner.StartQuery(this.state.currentQuery.query, this.state.currentQuery.catalog, this.state.currentQuery.schema);
+        this.queryRunner.StartQuery(
+            this.state.currentQuery.query,
+            this.state.currentQuery.catalog,
+            this.state.currentQuery.schema
+        )
     }
 
     toggleQueryCollapse = () => {
-        const queryEditor = document.getElementById('query-editor');
+        const queryEditor = document.getElementById('query-editor')
         if (queryEditor) {
-            this.isQueryCollapsed = !this.isQueryCollapsed;
-            queryEditor.style.display = this.isQueryCollapsed ? 'none' : 'block';
+            this.isQueryCollapsed = !this.isQueryCollapsed
+            queryEditor.style.display = this.isQueryCollapsed ? 'none' : 'block'
         }
     }
 
     render() {
-        const { results, columns, response, errorMessage, currentQuery, runningQuery } = this.state;
-        const isQueryRunning = runningQuery !== undefined && response.stats !== undefined && (response.stats.state === 'RUNNING' || response.stats.state === 'QUEUED');
+        const { results, columns, response, errorMessage, currentQuery, runningQuery } = this.state
+        const isQueryRunning =
+            runningQuery !== undefined &&
+            response.stats !== undefined &&
+            (response.stats.state === 'RUNNING' || response.stats.state === 'QUEUED')
 
         return (
             <>
                 <div className="card-header" id="query-header">
                     <div className="card-header-grid">
-                        <button 
-                            className="query-run-button flex items-center justify-center" 
-                            onClick={() => this.Execute()} 
-                            title='Run Query'
+                        <button
+                            className="query-run-button flex items-center justify-center"
+                            onClick={() => this.Execute()}
+                            title="Run Query"
                             id="execute-button"
                         >
                             {isQueryRunning ? (
@@ -174,7 +176,9 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                             className="catalog-setting"
                             title="Catalog"
                             id="catalog-text"
-                            onChange={(e) => this.props.queries.updateQuery(this.state.currentQuery.id, { catalog: e.target.value })}
+                            onChange={(e) =>
+                                this.props.queries.updateQuery(this.state.currentQuery.id, { catalog: e.target.value })
+                            }
                             value={currentQuery.catalog ?? ''}
                         />
                         <input
@@ -183,49 +187,52 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                             className="schema-setting"
                             title="Schema"
                             id="schema-text"
-                            onChange={(e) => this.props.queries.updateQuery(this.state.currentQuery.id, { schema: e.target.value })}
+                            onChange={(e) =>
+                                this.props.queries.updateQuery(this.state.currentQuery.id, { schema: e.target.value })
+                            }
                             value={currentQuery.schema ?? ''}
                         />
-                        <button 
-                            className="query-control-button flex items-center justify-center" 
+                        <button
+                            className="query-control-button flex items-center justify-center"
                             onClick={() => {
-                                const url = window.location.href.split('?')[0] + 
-                                    `?n=${encodeURIComponent(currentQuery.title)}&q=${encodeURIComponent(currentQuery.query)}`;
+                                const url =
+                                    window.location.href.split('?')[0] +
+                                    `?n=${encodeURIComponent(currentQuery.title)}&q=${encodeURIComponent(currentQuery.query)}`
                                 if (url.length > 8000) {
-                                    alert('The URL is too long to copy. Please copy and paste the query manually.');
+                                    alert('The URL is too long to copy. Please copy and paste the query manually.')
                                 } else {
-                                    navigator.clipboard.writeText(url);
+                                    navigator.clipboard.writeText(url)
                                 }
-                            }} 
-                            title='Copy Query Link'
+                            }}
+                            title="Copy Query Link"
                         >
                             <Link className="w-5 h-5" strokeWidth={1.5} />
                         </button>
                         <div></div>
-                        <button 
-                            className="query-control-button flex items-center justify-center" 
+                        <button
+                            className="query-control-button flex items-center justify-center"
                             onClick={() => {
-                                const addedQuery: QueryInfo = this.props.queries.addQuery(true);
-                            }} 
-                            title='Add Query'
+                                const addedQuery: QueryInfo = this.props.queries.addQuery(true)
+                            }}
+                            title="Add Query"
                         >
                             <Plus className="w-5 h-5" strokeWidth={1.5} />
                         </button>
                         <div></div>
-                        <button 
-                            className="query-control-button flex items-center justify-center" 
+                        <button
+                            className="query-control-button flex items-center justify-center"
                             onClick={() => {
-                                alert('Not implemented');
-                            }} 
-                            title='Add Parameters'
+                                alert('Not implemented')
+                            }}
+                            title="Add Parameters"
                         >
                             <FileEdit className="w-5 h-5" strokeWidth={1.5} />
                         </button>
                         <div></div>
-                        <button 
-                            className="query-control-button flex items-center justify-center" 
-                            onClick={this.toggleQueryCollapse} 
-                            title='Collapse Query'
+                        <button
+                            className="query-control-button flex items-center justify-center"
+                            onClick={this.toggleQueryCollapse}
+                            title="Collapse Query"
                         >
                             {this.isQueryCollapsed ? (
                                 <PlusSquare className="w-5 h-5" strokeWidth={1.5} />
@@ -238,14 +245,14 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 <div className="editorspace" id="query-editor">
                     <QueryEditor
                         onQueryChange={this.handleQueryChange}
-                        onSelectChange={() => {}} 
+                        onSelectChange={() => {}}
                         onExecute={() => this.Execute()}
                         queries={this.props.queries}
                         catalog={currentQuery.catalog}
                         schema={currentQuery.schema}
                     />
                 </div>
-                <div className='resultSetPort'>
+                <div className="resultSetPort">
                     <ResultSet
                         columns={columns}
                         results={results}
@@ -256,8 +263,8 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                     />
                 </div>
             </>
-        );
+        )
     }
 }
 
-export default QueryCell;
+export default QueryCell

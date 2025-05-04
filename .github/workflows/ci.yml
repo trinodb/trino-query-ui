@@ -22,11 +22,8 @@ jobs:
         with:
           node-version: '22'
 
-      # Temporarily disabling this step due to formatting issues.
-      # Linter and prettier) currently throws numerous warnings.
-      # Code style checks will be re-enabled in a future PR that includes a codebase reformat.
-      # - name: Check code style
-      #   run: npm run check:clean
+      - name: Check code style
+        run: npm run check:clean
 
       - name: Build package
         run: npm run package:clean

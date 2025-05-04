@@ -1,8 +1,8 @@
-export enum QueryType {
+enum QueryType {
     USER_ADDED = 'USER_ADDED',
     SAMPLE_QUERY = 'SAMPLE_QUERY',
     RESTORED_FROM_LOCAL_STORAGE = 'RESTORED_FROM_LOCAL_STORAGE',
-    FROM_QUERY_STRING = 'FROM_QUERY_STRING'
+    FROM_QUERY_STRING = 'FROM_QUERY_STRING',
 }
 
-export default QueryType;
+export default QueryType
