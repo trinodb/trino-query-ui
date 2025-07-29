@@ -66,7 +66,8 @@ class TrinoQueryRunner {
             state.stats.state = 'CANCELLING'
             this.state = state
             this.setStatus(state)
-            const nextUri = state.nextUri.replace('http://localhost:8080', '')
+            const nextUri = state.nextUri.replace(/^https?:\/\/[^/]+/, '')
+
             // cancel query
             fetch(nextUri, {
                 method: 'DELETE',
@@ -255,7 +256,7 @@ class TrinoQueryRunner {
     async NextPage(previous: any) {
         try {
             // fix cors for testing
-            const nextUri = await previous.nextUri.replace('http://localhost:8080', '')
+            const nextUri = await previous.nextUri.replace(/^https?:\/\/[^/]+/, '')
             const response = await fetch(nextUri, {
                 method: 'GET',
                 headers: {
