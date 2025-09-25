@@ -1,5 +1,5 @@
 import React from 'react'
-import QueryEditor from './QueryEditor'
+import QueryEditorPane from './QueryEditorPane'
 import ResultSet from './ResultSet'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
@@ -243,7 +243,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                     </div>
                 </div>
                 <div className="editorspace" id="query-editor">
-                    <QueryEditor
+                    <QueryEditorPane
                         onQueryChange={this.handleQueryChange}
                         onSelectChange={() => {}}
                         onExecute={() => this.Execute()}
