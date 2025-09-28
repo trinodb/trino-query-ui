@@ -33,6 +33,8 @@ function TabItem<T extends TabInfo>({
     const [isEditing, setIsEditing] = useState(false)
     const [editedTitle, setEditedTitle] = useState(tab.title)
     const inputRef = useRef<HTMLInputElement>(null)
+    const containerRef = useRef<HTMLDivElement | null>(null)
+    const dragHandleRef = useRef<HTMLDivElement | null>(null)
 
     const [{ isDragging }, drag, preview] = useDrag({
         type: ItemType.TAB,
@@ -52,6 +54,14 @@ function TabItem<T extends TabInfo>({
             }
         },
     })
+
+    useEffect(() => {
+        preview(drop(containerRef))
+    }, [preview, drop])
+
+    useEffect(() => {
+        drag(dragHandleRef)
+    }, [drag])
 
     useEffect(() => {
         if (isEditing && inputRef.current) {
@@ -86,11 +96,11 @@ function TabItem<T extends TabInfo>({
 
     return (
         <div
-            ref={(node) => preview(drop(node))}
+            ref={containerRef}
             className={`tab-item ${isActive ? 'tab-item-selected' : ''} ${isDragging ? 'dragging' : ''} ${tab.isPinned ? 'pinned' : ''}`}
             onClick={() => handleTabClick(tab.id)}
         >
-            <div className="tab-content" ref={drag}>
+            <div className="tab-content" ref={dragHandleRef}>
                 {isEditing ? (
                     <input
                         ref={inputRef}

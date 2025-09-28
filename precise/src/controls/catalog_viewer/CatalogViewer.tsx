@@ -27,7 +27,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({ initialFilterText = '', o
     // View state
     const [matches, setMatches] = useState<Set<string>>(new Set())
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
-    const viewerState = useRef<ViewerStateManager>()
+    const viewerState = useRef<ViewerStateManager | null>(null)
 
     const [isLoadingColumns, setIsLoadingColumns] = useState(false)
 
