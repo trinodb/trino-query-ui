@@ -1,22 +1,48 @@
 # Trino Query UI
 
-This Trino Query UI is a new UI component that can be integrated into Trino and run directly from the Trino installation at the `/query/` path. For testing, it can also be run separately and can proxy to a Trino running locally or elsewhere.
+A reusable React component for executing queries against Trino. It can be
+embedded into any React application and configured to proxy requests to a local
+or remote Trino cluster.
+
+> [!WARNING]
+> This package is under heavy development and is not yet recommended for
+> production workloads. Treat the current release as an early-stage demo;
+> production-ready builds and documentation are planned.
 
 ![Trino Query UI Demo](demos.gif "Trino Query UI Demo")
 
 Implementation details:
-* React Typescript project with Vite
-* Using Node.js v20+
-* Monaco editor + ANTLR parser using Trino language
+* React TypeScript project with Vite
+* Uses Node.js v20+
+* Monaco editor + ANTLR parser using the Trino language
 
-## Building and Shipping in Trino
+## Installation
+
+```
+npm install trino-query-ui
+```
+
+## Quick start
+
+```tsx
+import { QueryEditor } from 'trino-query-ui'
+import 'trino-query-ui/dist/index.css'
+
+function MyTrinoApp() {
+  return <QueryEditor />
+}
+
+export default MyTrinoApp
+```
+
+## Building and shipping in Trino
 
 The Query UI builds just like the existing UI in Trino.
 1. First you build the TypeScript into Javascript and CSS
 2. Then copy the distributable path into Trino.
 3. Then modify Trino to respond to the query ui path.
 
-### Building for Integration
+### Building for integration
 
 ```
 cd precise
@@ -28,7 +54,7 @@ npm run build
 mkdir -p $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
 cp -r dist/* $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
 
-### Modifying Trino to Respond to /query/
+### Modifying Trino to respond to /query/
 
 Modify `$TRINO_HOME/core/trino-main/src/main/java/io/trino/server/ui/WebUiStaticResource.java`:
 
@@ -88,19 +114,23 @@ Add `/query/` path. Note any path can be used:
 
 ## Development
 
-### Setup the Coding Environment
+### Build and run
 
-Tested on Ubuntu and Windows.
+1. Install Node.js (v20 or newer) from <https://nodejs.org/en/download/>
+2. Install the dependencies and run the dev server:
+```
+cd precise
+npm install
+npm run dev
+```
 
-1. Install node.js <https://nodejs.org/en/download/> at least v20
-2. Create an NPM enviroment using Vite: `npm create vite@latest`, pick *React*, then *Typescript*
-3. In the precise folder, install monaco `npm install @monaco-editor/react`
-4. Install Typescript Runtime for ANTLR4 `npm install antlr4ng` and the cli `npm install --save-dev antlr4ng-cli`
-   because <https://github.com/tunnelvisionlabs/antlr4ts> seems abandoned?
+The local URL is displayed, and you can open it in your browser.
 
-### Setup Proxying to Local Trino Instance
+### Set Up proxying to a local Trino instance
 
-To run outside of Trino, update the contents of the `vite.config.ts` with the following so that queries can be properly proxied over to Trino's query endpoint running on `http://localhost:8080` or any other proxy path required.
+Update `vite.config.ts` with the following so that queries can be
+proxied to Trino's query endpoint running on `http://localhost:8080` (or any
+other path you require).
 
 ```tsx
 import { defineConfig } from 'vite'
@@ -119,24 +149,13 @@ export default defineConfig({
       },
     },
   },
+  ...
 });
 ```
 
-### Build and Run
+### Building the parser
 
-To run, start:
-
-```shell
-  cd precise
-  npm install
-  npm run dev
-```
-
-The local URL will be be displayed which you can open in your browser.
-
-### Building the Parser
-
-To build parser: `npm run antlr4ng`, as configured in **package.json**
+Run `npm run antlr4ng` to build the parser, as configured in **package.json**.
 
 ### Linting and code formatting
 
@@ -146,37 +165,48 @@ To check code quality and formatting:
   npm run check
 ```
 
-This command runs both eslint and prettier, as defined in **package.json**
+This command runs both ESLint and Prettier, as defined in **package.json**.
 
 ## Philosophy
 
-This UI's purpose is to provide an environment where once the cluster is stood up, executing queries and exploring data sets can be done right away. The idended use cases are:
+This UI's purpose is to provide an environment where, once the cluster is up,
+you can immediately execute queries and explore data sets. The intended use
+cases are:
 * Initial proof-of-concept queries.
 * Exploration of data sets.
 * Performance analysis.
-* Adhoc query execution.
-* Quickly enabling a data engineering team to start work before other integrations are in place.
+* Ad hoc query execution.
+* Quickly enabling a data engineering team to start work before other
+  integrations are in place.
 * Early demos.
 
-The approach taken:
-1. Direct integration into Trino UI
-   - No need for additional authentication hop (although it could be added in the future)
-   - Auth as the user executing the query if using Oauth2
+The approach:
+1. Direct integration into the Trino UI
+   - No need for an additional authentication hop (although it could be added
+     in the future)
+   - Authenticates as the user executing the query when using OAuth2
    - Trino does the heavy lifting
-2. Don't need to think, just write a query
-   - Autocomplete must be aware of not just Trino language but tables and columns
-   - Syntax highlighting, validation
-   - Comprehensive catalog explorer
-3. No black box query execution
-   - Show progress and details of execution: people ask "why is my query slow" but mostly this is because they are only shown a spinner for 10 minutes.
-   - Link to Trino query UI to drill into query performance
-   - Show stages and split counts like Trino console client
-4. Easy to navigate
+2. Remove friction so you can simply write a query
+   - Autocomplete understands the Trino language, tables, and columns
+   - Provides syntax highlighting and validation
+   - Offers a comprehensive catalog explorer
+3. Avoid black-box query execution
+   - Show progress and execution details. People ask "why is my query slow?"
+     mostly because they only see a spinner for minutes.
+   - Link to the Trino Query UI to drill into query performance
+   - Show stages and split counts like the Trino console client
+4. Keep the experience easy to navigate
 
-### Gaps and Future Direction
+### Gaps and future direction
 
-* The ability to save queries and use source control requires either back end capabilities in the Trino service or can utilize Trino to write queries as tables.
+* Saving queries and using source control require either backend capabilities
+  in the Trino service or leveraging Trino to write queries as tables.
 * No autocomplete for the Trino function list.
-* Basic graphing capabilities - looking at a table is not enough even for inspecting data sets. 
-* No LLM copilot integration yet, this is done badly in many query UIs and if done well could make query crafting very fast, and solve other issues like translation from other query languages.
-* Parameters and string replace: this is partly implemented in `SubstitutionEditor` and should support both SQL parameters and string replacement.
+* Basic graphing capabilities are still missing—looking at a table alone is
+  not enough even for inspecting data sets.
+* No LLM copilot integration yet. Many query UIs implement this poorly, but,
+  done well, it could make query crafting fast and help translate from other
+  query languages.
+* Parameters and string replacement are only partly implemented in
+  `SubstitutionEditor` and should support both SQL parameters and string
+  replacement.

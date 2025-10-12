@@ -3,7 +3,6 @@ name: Publish Package to npmjs
 on:
   release:
     types: [created]
-  pull_request:
 
 jobs:
   publish:
@@ -27,11 +26,7 @@ jobs:
       - name: Build package
         run: npm run build
 
-      # This step is a placeholder for publishing to npm.
-      # The project structure and Node configuration will need to be adjusted
-      # before this can be enabled and work as intended.
       - name: Publish to npm
-        if: github.event_name == 'release'
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
