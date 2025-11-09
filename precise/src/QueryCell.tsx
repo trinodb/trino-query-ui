@@ -1,12 +1,19 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
+import { Box, Divider, IconButton, Stack, TextField, Toolbar, Typography } from '@mui/material'
+import type { TextFieldProps } from '@mui/material/TextField'
+import type { TypographyProps } from '@mui/material/Typography'
+import MenuIcon from '@mui/icons-material/Menu'
+import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
+import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined'
+import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import QueryEditorPane from './QueryEditorPane'
 import ResultSet from './ResultSet'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import AsyncTrinoClient from './AsyncTrinoClient'
-import { Play, StopCircle, Link, Plus, FileEdit, MinusSquare, PlusSquare } from 'lucide-react'
-import './style/components.css'
-import './style/query-editor.css'
+
+const TOOLBAR_HEIGHT = 64
 
 interface QueryCellState {
     results: any[]
@@ -15,15 +22,22 @@ interface QueryCellState {
     errorMessage: string
     currentQuery: QueryInfo
     runningQuery: QueryInfo | undefined
+    editingTitle: boolean
+    editingCatalog: boolean
+    editingSchema: boolean
+    editorCollapsed: boolean
 }
 
 interface QueryCellProps {
     queries: Queries
+    drawerOpen: boolean
+    height: number
+    onDrawerToggle: () => void
+    theme?: string
 }
 
 class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     private queryRunner: AsyncTrinoClient
-    private isQueryCollapsed: boolean = false
 
     constructor(props: QueryCellProps) {
         super(props)
@@ -34,6 +48,10 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             errorMessage: '',
             currentQuery: this.props.queries.getCurrentQuery(),
             runningQuery: undefined,
+            editingTitle: false,
+            editingCatalog: false,
+            editingSchema: false,
+            editorCollapsed: false,
         }
         this.queryRunner = new AsyncTrinoClient()
         this.setupQueryRunner()
@@ -50,13 +68,19 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     shouldComponentUpdate(nextProps: QueryCellProps, nextState: QueryCellState) {
         // Only update if the ResultSet-related props have changed
         return (
+            this.props.drawerOpen !== nextProps.drawerOpen ||
+            this.props.height !== nextProps.height ||
             this.state.results !== nextState.results ||
             this.state.columns !== nextState.columns ||
             this.state.response !== nextState.response ||
             this.state.errorMessage !== nextState.errorMessage ||
             this.state.runningQuery !== nextState.runningQuery ||
             this.state.currentQuery !== nextState.currentQuery ||
-            this.state.currentQuery.title !== nextState.currentQuery.title
+            this.state.currentQuery.title !== nextState.currentQuery.title ||
+            this.state.editingTitle !== nextState.editingTitle ||
+            this.state.editingCatalog !== nextState.editingCatalog ||
+            this.state.editingSchema !== nextState.editingSchema ||
+            this.state.editorCollapsed !== nextState.editorCollapsed
         )
     }
 
@@ -109,6 +133,14 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         this.props.queries.updateQuery(this.state.currentQuery.id, { title: title })
     }
 
+    handleCatalogChange = (catalog: string) => {
+        this.props.queries.updateQuery(this.state.currentQuery.id, { catalog: catalog })
+    }
+
+    handleSchemaChange = (schema: string) => {
+        this.props.queries.updateQuery(this.state.currentQuery.id, { schema: schema })
+    }
+
     ClearResults() {
         this.setState({ results: [], columns: [], errorMessage: '' })
     }
@@ -132,11 +164,63 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     toggleQueryCollapse = () => {
-        const queryEditor = document.getElementById('query-editor')
-        if (queryEditor) {
-            this.isQueryCollapsed = !this.isQueryCollapsed
-            queryEditor.style.display = this.isQueryCollapsed ? 'none' : 'block'
+        this.setState({ editorCollapsed: !this.state.editorCollapsed })
+    }
+
+    private renderEditableTextField(
+        key: 'editingTitle' | 'editingCatalog' | 'editingSchema',
+        value: string | undefined,
+        options: {
+            typographyProps?: TypographyProps
+            textFieldProps?: TextFieldProps
+            displayContent?: ReactNode
+        } = {}
+    ) {
+        const { typographyProps = {}, textFieldProps = {}, displayContent } = options
+        const isEditing = this.state[key]
+
+        if (isEditing) {
+            const { onChange, onKeyDown, onBlur, autoFocus, ...restTextFieldProps } = textFieldProps
+
+            return (
+                <TextField
+                    size="small"
+                    variant="standard"
+                    {...restTextFieldProps}
+                    value={value ?? ''}
+                    onChange={(event) => {
+                        onChange?.(event)
+                    }}
+                    onKeyDown={(event) => {
+                        onKeyDown?.(event)
+                        if (!event.defaultPrevented && (event.key === 'Enter' || event.key === 'Escape')) {
+                            this.setState({ [key]: false } as Pick<QueryCellState, typeof key>)
+                        }
+                    }}
+                    onBlur={(event) => {
+                        onBlur?.(event)
+                        this.setState({ [key]: false } as Pick<QueryCellState, typeof key>)
+                    }}
+                    autoFocus={autoFocus ?? true}
+                />
+            )
         }
+
+        const { onClick, ...restTypographyProps } = typographyProps
+
+        return (
+            <Typography
+                {...restTypographyProps}
+                onClick={(event) => {
+                    onClick?.(event)
+                    if (!event.defaultPrevented) {
+                        this.setState({ [key]: true } as Pick<QueryCellState, typeof key>)
+                    }
+                }}
+            >
+                {displayContent ?? value}
+            </Typography>
+        )
     }
 
     render() {
@@ -146,103 +230,100 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             response.stats !== undefined &&
             (response.stats.state === 'RUNNING' || response.stats.state === 'QUEUED')
 
+        const availablePanelHeight = Math.max(this.props.height - TOOLBAR_HEIGHT, 0)
+        const resultSetHeight = this.state.editorCollapsed ? availablePanelHeight : availablePanelHeight / 2
+
         return (
-            <>
-                <div className="card-header" id="query-header">
-                    <div className="card-header-grid">
-                        <button
-                            className="query-run-button flex items-center justify-center"
-                            onClick={() => this.Execute()}
-                            title="Run Query"
-                            id="execute-button"
-                        >
-                            {isQueryRunning ? (
-                                <StopCircle className="w-5 h-5" strokeWidth={1.5} />
-                            ) : (
-                                <Play className="w-5 h-5" strokeWidth={1.5} />
-                            )}
-                        </button>
-                        <input
-                            type="text"
-                            placeholder="Query Title"
-                            className="query-title"
-                            id="query-title"
-                            onChange={(e) => this.handleTitleChange(e.target.value)}
-                            value={currentQuery.title}
-                        />
-                        <input
-                            type="text"
-                            placeholder="<no-catalog>"
-                            className="catalog-setting"
-                            title="Catalog"
-                            id="catalog-text"
-                            onChange={(e) =>
-                                this.props.queries.updateQuery(this.state.currentQuery.id, { catalog: e.target.value })
-                            }
-                            value={currentQuery.catalog ?? ''}
-                        />
-                        <input
-                            type="text"
-                            placeholder="<no-schema>"
-                            className="schema-setting"
-                            title="Schema"
-                            id="schema-text"
-                            onChange={(e) =>
-                                this.props.queries.updateQuery(this.state.currentQuery.id, { schema: e.target.value })
-                            }
-                            value={currentQuery.schema ?? ''}
-                        />
-                        <button
-                            className="query-control-button flex items-center justify-center"
-                            onClick={() => {
-                                const url =
-                                    window.location.href.split('?')[0] +
-                                    `?n=${encodeURIComponent(currentQuery.title)}&q=${encodeURIComponent(currentQuery.query)}`
-                                if (url.length > 8000) {
-                                    alert('The URL is too long to copy. Please copy and paste the query manually.')
-                                } else {
-                                    navigator.clipboard.writeText(url)
-                                }
-                            }}
-                            title="Copy Query Link"
-                        >
-                            <Link className="w-5 h-5" strokeWidth={1.5} />
-                        </button>
-                        <div></div>
-                        <button
-                            className="query-control-button flex items-center justify-center"
-                            onClick={() => {
-                                const addedQuery: QueryInfo = this.props.queries.addQuery(true)
-                            }}
-                            title="Add Query"
-                        >
-                            <Plus className="w-5 h-5" strokeWidth={1.5} />
-                        </button>
-                        <div></div>
-                        <button
-                            className="query-control-button flex items-center justify-center"
-                            onClick={() => {
-                                alert('Not implemented')
-                            }}
-                            title="Add Parameters"
-                        >
-                            <FileEdit className="w-5 h-5" strokeWidth={1.5} />
-                        </button>
-                        <div></div>
-                        <button
-                            className="query-control-button flex items-center justify-center"
-                            onClick={this.toggleQueryCollapse}
-                            title="Collapse Query"
-                        >
-                            {this.isQueryCollapsed ? (
-                                <PlusSquare className="w-5 h-5" strokeWidth={1.5} />
-                            ) : (
-                                <MinusSquare className="w-5 h-5" strokeWidth={1.5} />
-                            )}
-                        </button>
-                    </div>
-                </div>
-                <div className="editorspace" id="query-editor">
+            <Box>
+                <Toolbar sx={{ pl: 1, pr: 0.25, py: 0 }} disableGutters>
+                    <IconButton
+                        color="inherit"
+                        title="Catalogs"
+                        edge="start"
+                        onClick={this.props.onDrawerToggle}
+                        sx={[{ mx: 0 }, this.props.drawerOpen && { display: 'none' }]}
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                    <IconButton
+                        color={!isQueryRunning ? 'success' : 'error'}
+                        title={!isQueryRunning ? 'Run query' : 'Stop query'}
+                        onClick={() => this.Execute()}
+                    >
+                        {!isQueryRunning ? <PlayCircleOutlinedIcon /> : <StopCircleOutlinedIcon />}
+                    </IconButton>
+                    {this.renderEditableTextField('editingTitle', currentQuery.title, {
+                        typographyProps: {
+                            variant: 'h6',
+                            sx: { ml: 2 },
+                        },
+                        textFieldProps: {
+                            sx: { maxWidth: 200 },
+                            onChange: (event) => this.handleTitleChange(event.target.value),
+                        },
+                    })}
+                    <Box sx={{ flexGrow: 1 }} />
+                    <Stack direction="row" spacing={3} sx={{ mr: 2 }} alignItems="baseline">
+                        <Stack direction="row" spacing={1}>
+                            <Box component="span" sx={{ fontWeight: 600, color: 'text.secondary', mr: 0.5 }}>
+                                Catalog:
+                            </Box>
+                            {this.renderEditableTextField('editingCatalog', currentQuery.catalog ?? '', {
+                                typographyProps: {
+                                    sx: { ml: 2, maxWidth: 200, fontFamily: 'monospace' },
+                                    noWrap: true,
+                                },
+                                textFieldProps: {
+                                    sx: {
+                                        maxWidth: 200,
+                                        '& .MuiInputBase-input': { fontFamily: 'monospace' },
+                                    },
+                                    onChange: (event) => this.handleCatalogChange(event.target.value),
+                                },
+                                displayContent:
+                                    currentQuery.catalog && currentQuery.catalog.length > 0 ? (
+                                        currentQuery.catalog
+                                    ) : (
+                                        <Box component="span" sx={{ fontStyle: 'italic', color: 'text.disabled' }}>
+                                            &lt;no-catalog&gt;
+                                        </Box>
+                                    ),
+                            })}
+                        </Stack>
+
+                        <Stack direction="row" spacing={1}>
+                            <Box component="span" sx={{ fontWeight: 600, color: 'text.secondary', mr: 0.5 }}>
+                                Schema:
+                            </Box>
+                            {this.renderEditableTextField('editingSchema', currentQuery.schema ?? '', {
+                                typographyProps: {
+                                    sx: { ml: 2, maxWidth: 200, fontFamily: 'monospace' },
+                                    noWrap: true,
+                                },
+                                textFieldProps: {
+                                    sx: {
+                                        maxWidth: 200,
+                                        '& .MuiInputBase-input': { fontFamily: 'monospace' },
+                                    },
+                                    onChange: (event) => this.handleSchemaChange(event.target.value),
+                                },
+                                displayContent:
+                                    currentQuery.schema && currentQuery.schema.length > 0 ? (
+                                        currentQuery.schema
+                                    ) : (
+                                        <Box component="span" sx={{ fontStyle: 'italic', color: 'text.disabled' }}>
+                                            &lt;no-schema&gt;
+                                        </Box>
+                                    ),
+                            })}
+                        </Stack>
+                    </Stack>
+                    <IconButton color="inherit" title="Collapse query" onClick={this.toggleQueryCollapse}>
+                        {this.state.editorCollapsed ? <UnfoldMoreIcon /> : <UnfoldLessIcon />}
+                    </IconButton>
+                </Toolbar>
+                <Divider />
+                <Box sx={{ display: this.state.editorCollapsed ? 'none' : 'block' }}>
                     <QueryEditorPane
                         onQueryChange={this.handleQueryChange}
                         onSelectChange={() => {}}
@@ -250,19 +331,21 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                         queries={this.props.queries}
                         catalog={currentQuery.catalog}
                         schema={currentQuery.schema}
+                        theme={this.props.theme}
+                        maxHeight={availablePanelHeight}
                     />
-                </div>
-                <div className="resultSetPort">
-                    <ResultSet
-                        columns={columns}
-                        results={results}
-                        response={response}
-                        errorMessage={errorMessage}
-                        queryInfo={runningQuery}
-                        onClearResults={() => this.ClearResults()}
-                    />
-                </div>
-            </>
+                    {this.props.theme != 'dark' && <Divider />}
+                </Box>
+                <ResultSet
+                    columns={columns}
+                    results={results}
+                    response={response}
+                    height={resultSetHeight}
+                    errorMessage={errorMessage}
+                    queryId={runningQuery?.id}
+                    onClearResults={() => this.ClearResults()}
+                />
+            </Box>
         )
     }
 }

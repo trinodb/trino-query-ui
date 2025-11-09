@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { Button, Tooltip } from '@mui/material'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 interface ClearButtonProps {
     onClear: () => void
@@ -19,23 +21,18 @@ const ClearButton: React.FC<ClearButtonProps> = ({ onClear }) => {
     }
 
     return (
-        <div
-            className={`result-action-button clear-result-table ${confirming ? 'confirmed' : ''}`}
-            onClick={handleClear}
-            title={confirming ? 'Click again to confirm' : 'Clear results'}
-        >
-            {confirming ? (
-                <>
-                    <AlertTriangle className="action-icon" size={16} />
-                    <span className="action-text">Confirm</span>
-                </>
-            ) : (
-                <>
-                    <Trash2 className="action-icon" size={16} />
-                    <span className="action-text">Clear</span>
-                </>
-            )}
-        </div>
+        <Tooltip title={confirming ? 'Click again to confirm' : 'Clear results'}>
+            <Button
+                variant={confirming ? 'contained' : 'outlined'}
+                color={confirming ? 'error' : 'primary'}
+                size="small"
+                sx={{ fontSize: '0.5rem' }}
+                startIcon={confirming ? <WarningAmberIcon fontSize="small" /> : <DeleteOutlineIcon fontSize="small" />}
+                onClick={handleClear}
+            >
+                {confirming ? 'Confirm' : 'Clear'}
+            </Button>
+        </Tooltip>
     )
 }
 

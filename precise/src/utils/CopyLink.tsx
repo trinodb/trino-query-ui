@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { Copy, CheckCircle } from 'lucide-react'
+import { Button, Tooltip } from '@mui/material'
+import CopyAllOutlinedIcon from '@mui/icons-material/CopyAllOutlined'
+import DoneOutlinedIcon from '@mui/icons-material/DoneOutlined'
 
 interface CopyLinkProps {
     copy: () => void
@@ -15,23 +17,24 @@ const CopyLink: React.FC<CopyLinkProps> = ({ copy }) => {
     }
 
     return (
-        <div
-            className={`result-action-button copy-link ${copied ? 'copied' : ''}`}
-            onClick={handleCopy}
-            title="Copy to clipboard"
-        >
-            {copied ? (
-                <>
-                    <CheckCircle className="action-icon" size={16} />
-                    <span className="action-text">Copied!</span>
-                </>
-            ) : (
-                <>
-                    <Copy className="action-icon" size={16} />
-                    <span className="action-text">Copy</span>
-                </>
-            )}
-        </div>
+        <Tooltip title="Copy to clipboard">
+            <Button
+                variant={copied ? 'contained' : 'outlined'}
+                color={copied ? 'success' : 'primary'}
+                size="small"
+                sx={{ fontSize: '0.5rem' }}
+                startIcon={
+                    copied ? (
+                        <DoneOutlinedIcon sx={{ fontSize: '0.5rem' }} />
+                    ) : (
+                        <CopyAllOutlinedIcon sx={{ fontSize: '0.5rem' }} />
+                    )
+                }
+                onClick={handleCopy}
+            >
+                {copied ? 'Copied!' : 'Copy'}
+            </Button>
+        </Tooltip>
     )
 }
 

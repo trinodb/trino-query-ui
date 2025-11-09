@@ -1,17 +1,33 @@
 import React from 'react'
-import QueryInfo from './schema/QueryInfo'
+import {
+    Alert,
+    Box,
+    CircularProgress,
+    LinearProgress,
+    Link,
+    Paper,
+    Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableFooter,
+    TableHead,
+    TableRow,
+    Typography,
+} from '@mui/material'
+import { DataGrid, GridColDef } from '@mui/x-data-grid'
+import Chip, { ChipProps } from '@mui/material/Chip'
 import ReactDOMServer from 'react-dom/server'
-import ErrorBox from './utils/ErrorBoxProvider'
-import ProgressBar from './utils/ProgressBar'
 import CopyLink from './utils/CopyLink'
 import ClearButton from './utils/ClearButton'
-import './style/results.css'
 
 interface ResultSetProps {
-    queryInfo: QueryInfo | undefined
+    queryId: string | undefined
     results: any[]
     columns: any[]
     response: any
+    height: number
     errorMessage: string
     onClearResults: (queryId: string | undefined) => void
 }
@@ -20,6 +36,38 @@ class ResultSet extends React.Component<ResultSetProps> {
     previousRunningPercentage: number = 0
     statsHistory: any[] = []
     lastQueryId: string | undefined = undefined
+
+    static readonly STATE_COLOR_MAP: Record<string, ChipProps['color']> = {
+        QUEUED: 'default',
+        RUNNING: 'info',
+        PLANNING: 'info',
+        FINISHED: 'success',
+        BLOCKED: 'secondary',
+        USER_ERROR: 'error',
+        CANCELED: 'warning',
+        INSUFFICIENT_RESOURCES: 'error',
+        EXTERNAL_ERROR: 'error',
+        UNKNOWN_ERROR: 'error',
+    }
+
+    getQueryStateColor(queryState: string): ChipProps['color'] {
+        switch (queryState) {
+            case 'QUEUED':
+                return ResultSet.STATE_COLOR_MAP.QUEUED
+            case 'PLANNING':
+                return ResultSet.STATE_COLOR_MAP.PLANNING
+            case 'STARTING':
+            case 'FINISHING':
+            case 'RUNNING':
+                return ResultSet.STATE_COLOR_MAP.RUNNING
+            case 'FAILED':
+                return ResultSet.STATE_COLOR_MAP.UNKNOWN_ERROR
+            case 'FINISHED':
+                return ResultSet.STATE_COLOR_MAP.FINISHED
+            default:
+                return ResultSet.STATE_COLOR_MAP.QUEUED
+        }
+    }
 
     renderHeader(columns: any) {
         return (
@@ -60,11 +108,27 @@ class ResultSet extends React.Component<ResultSetProps> {
         )
     }
 
-    renderTable = (results: any[], response: any, columns: any) => {
+    renderTable = (results: any[], columns: any) => {
+        const muiColumns: GridColDef[] = columns.map((column: any) => ({ field: column.name, minWidth: 150 }))
+        const muiRows = results
+            .flat()
+            .map((row: any[], i: number) =>
+                Object.fromEntries([
+                    ['mui-row-id', `row-${i + 1}`],
+                    ...columns.map((c: any, j: number) => [c.name, row[j]]),
+                ])
+            )
+
         return (
-            <div className={this.getRowCount() > 30 ? 'scrollable' : 'result-table-container'}>
-                {this.renderInnerTable(results, response, columns)}
-            </div>
+            <DataGrid
+                rows={muiRows}
+                columns={muiColumns}
+                sx={{
+                    '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
+                }}
+                getRowId={(row) => String(row['mui-row-id'])}
+                density="compact"
+            />
         )
     }
 
@@ -214,14 +278,14 @@ class ResultSet extends React.Component<ResultSetProps> {
     }
 
     render() {
-        const { queryInfo, results, columns, response, errorMessage } = this.props
+        const { queryId, results, columns, response, height, errorMessage } = this.props
 
         // if the query ID has changed, reset the last processed rows and elapsed time
-        if (queryInfo == null || this.lastQueryId !== queryInfo.id) {
+        if (this.lastQueryId !== queryId) {
             this.reset()
         }
 
-        this.lastQueryId = queryInfo?.id
+        this.lastQueryId = queryId
 
         // new implementation, look over 10 second window in stats history
         let processedRowsSinceLast = 0
@@ -271,239 +335,289 @@ class ResultSet extends React.Component<ResultSetProps> {
 
         // Ensure the 'result-set' class is applied to the container
         return (
-            <div>
-                {
-                    // only return if there are columns
-                    columns && columns.length ? (
-                        <div className="result-set">
-                            {response.stats && this.isFinishedFailedOrCancelled(response.stats.state) && (
-                                <ClearButton onClear={() => this.props.onClearResults(queryInfo?.id)} />
-                            )}
-                            <CopyLink copy={() => this.copy()} />
-                            {/* if row count > 30 place in scrollable div */}
-                            {this.renderTable(results, response, columns)}
-                        </div>
-                    ) : null
-                }
+            <Box>
                 {response && response.id ? (
-                    <div className="link-to-query">
-                        {this.getRowCount()} rows:{' '}
-                        <a href={`/ui/query.html?${response.id}`} target="_blank">
-                            {response.id}
-                        </a>
-                    </div>
+                    <Box display="flex" alignItems="center" gap={1} fontSize="0.8rem" sx={{ p: 1 }}>
+                        {errorMessage ? (
+                            <Alert severity="error" sx={{ py: 0 }}>
+                                {errorMessage}
+                            </Alert>
+                        ) : null}
+                        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.8rem' }}>
+                            <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                                {this.getRowCount()} rows:
+                            </Typography>
+                            <Typography variant="caption">
+                                <Link href={`/ui/query.html?${response.id}`}>{response.id}</Link>
+                            </Typography>
+                            {columns && columns.length ? (
+                                response.stats && this.isFinishedFailedOrCancelled(response.stats.state) ? (
+                                    <>
+                                        <ClearButton onClear={() => this.props.onClearResults(queryId)} />
+                                        <CopyLink copy={() => this.copy()} />
+                                    </>
+                                ) : null
+                            ) : null}
+                        </Box>
+                    </Box>
                 ) : null}
-                {errorMessage ? <ErrorBox errorMessage={errorMessage} errorContext="Results Viewer" /> : null}
                 {/* if the status is not finished, show spinner */}
                 {response &&
                 response.stats &&
                 response.stats.state !== 'FINISHED' &&
                 response.stats.state !== 'FAILED' &&
                 response.stats.state !== 'CANCELLED' ? (
-                    <div className="stats">
-                        <div className="spacer">
-                            <div className="status">
-                                <div className="spinner"></div>
-                                <div className="progress-percent">
-                                    {response && response.stats && response.stats.runningPercentage
-                                        ? Math.floor(response.stats.runningPercentage)
-                                        : 0}
-                                    %
-                                </div>
-                                <div className="status-text">
-                                    {response.stats.state}
-                                    <br />
+                    <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 1 }}>
+                            <CircularProgress size={25} />
+                            <Typography variant="h6">
+                                {response && response.stats && response.stats.progressPercentage
+                                    ? Math.floor(response.stats.progressPercentage)
+                                    : 0}
+                                %
+                            </Typography>
+                            <Stack alignItems="flex-start">
+                                <Chip
+                                    size="small"
+                                    label={response.stats.state}
+                                    color={this.getQueryStateColor(response.stats.state)}
+                                />
+                                <Typography variant="caption">
                                     Workers: {response.stats.nodes}, Running splits: {response.stats.runningSplits},
                                     Total splits: {response.stats.totalSplits}, Run time:{' '}
                                     {Math.floor(response.stats.elapsedTimeMillis / 1000)}s
-                                </div>
-                            </div>
-                        </div>
-                        <div className="spacer">
-                            <div className="progress-bar-grid">
-                                <ProgressBar
-                                    progress={
-                                        response && response.stats && response.stats.progressPercentage
-                                            ? Math.floor(response.stats.progressPercentage)
-                                            : 0
-                                    }
-                                    state={
-                                        response && response.stats && response.stats.state ? response.stats.state : ''
-                                    }
-                                />
-                                <div className="progress-bar-timer">
-                                    {this.formatMillisAsHHMMSS(response.stats.elapsedTimeMillis)}
-                                </div>
-                            </div>
-                        </div>
-                        {/* if response.stats.subStages */}
-                        {response.stats.rootStage && response.stats.rootStage.subStages ? (
-                            <div>
-                                <table className="query-status-table">
-                                    <thead>
-                                        <tr className="status-stage-category-header">
-                                            {' '}
-                                            {/* groupings for subcategories of metrics */}
-                                            <th colSpan={1}></th>
-                                            <th colSpan={1}></th>
-                                            <th colSpan={3} className="status-stage-category-header-rows">
-                                                Rows
-                                            </th>
-                                            <th colSpan={4} className="status-stage-category-header-bytes">
-                                                Bytes
-                                            </th>
-                                            <th colSpan={3} className="status-stage-category-header-splits">
-                                                Splits
-                                            </th>
-                                        </tr>
-                                        <tr>
-                                            <th className="status-stage-default">Stage</th>
-                                            <th className="status-stage-default">Nodes</th>
-                                            <th className="status-stage-rows">Processed</th>
-                                            <th className="status-stage-rows">Rate</th>
-                                            <th className="status-stage-rows">Current Rate</th>
-                                            <th className="status-stage-bytes">Processed</th>
-                                            <th className="status-stage-bytes">Rate</th>
-                                            <th className="status-stage-bytes">Current Rate</th>
-                                            <th className="status-stage-bytes">Input Processed</th>
-                                            <th className="status-stage-splits">Queued</th>
-                                            <th className="status-stage-splits">Running</th>
-                                            <th className="status-stage-splits">Done</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            key="root_stage_stages"
-                                            className={
-                                                response.stats.rootStage.state == 'RUNNING'
-                                                    ? 'stage-running'
-                                                    : 'stage-not-running'
-                                            }
-                                        >
-                                            <td className="status-stage-default">0 (root)</td>
-                                            <td className="status-stage-default">{response.stats.rootStage.nodes}</td>
-                                            <td className="status-stage-rows">
-                                                {this.rowCountToCorrectScale(response.stats.rootStage.processedRows)}
-                                            </td>
-                                            <td className="status-stage-rows">
-                                                {this.rowCountToCorrectScale(
-                                                    response.stats.rootStage.processedRows /
-                                                        (response.stats.rootStage.wallTimeMillis / 1000)
-                                                )}
-                                            </td>
-                                            <td className="status-stage-rows"></td>
-                                            <td className="status-stage-bytes">
-                                                {this.bytesToCorrectScale(response.stats.rootStage.processedBytes)}
-                                            </td>
-                                            <td className="status-stage-bytes">
-                                                {this.bytesToCorrectScale(
-                                                    response.stats.rootStage.processedBytes /
-                                                        (response.stats.wallTimeMillis / 1000)
-                                                )}
-                                            </td>
-                                            <td className="status-stage-bytes"></td>
-                                            <th className="status-stage-bytes">
-                                                {this.bytesToCorrectScale(response.stats.rootStage.physicalInputBytes)}
-                                            </th>
-                                            <td className="status-stage-splits">
-                                                {response.stats.rootStage.queuedSplits}
-                                            </td>
-                                            <td className="status-stage-splits">
-                                                {response.stats.rootStage.runningSplits}
-                                            </td>
-                                            <td className="status-stage-splits">
-                                                {response.stats.rootStage.completedSplits}
-                                            </td>
-                                        </tr>
-                                        {/* look at all the substages in subStages */}
-                                        {stages.map((subStageInfo: any) => {
-                                            return (
-                                                <tr
-                                                    key={response.id + '-' + subStageInfo.stage.stageId}
-                                                    className={
-                                                        subStageInfo.stage.state == 'RUNNING'
-                                                            ? 'stage-running'
-                                                            : 'stage-not-running'
-                                                    }
+                                </Typography>
+                            </Stack>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 1 }}>
+                            <LinearProgress
+                                sx={{ flexGrow: 1 }}
+                                variant="determinate"
+                                color="info"
+                                value={
+                                    response && response.stats && response.stats.progressPercentage
+                                        ? Math.floor(response.stats.progressPercentage)
+                                        : 0
+                                }
+                            />
+                            <Typography variant="caption">
+                                {this.formatMillisAsHHMMSS(response.stats.elapsedTimeMillis)}
+                            </Typography>
+                        </Box>
+                        <Box>
+                            {response.stats.rootStage && response.stats.rootStage.subStages ? (
+                                <TableContainer
+                                    component={Paper}
+                                    sx={{
+                                        // decrease the resultset size by the header size
+                                        height: height - 42,
+                                        overflowY: 'auto',
+                                    }}
+                                >
+                                    <Table
+                                        sx={{
+                                            '& .MuiTableRow-root > *': {
+                                                borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+                                            },
+                                            '& .MuiTableRow-root > *:last-of-type': {
+                                                borderRight: 'none',
+                                            },
+                                        }}
+                                        size="small"
+                                        stickyHeader
+                                    >
+                                        <TableHead>
+                                            <TableRow sx={{ '& th': { fontWeight: 600 } }}>
+                                                <TableCell align="left" colSpan={3}>
+                                                    Query run metrics
+                                                </TableCell>
+                                                <TableCell align="center" colSpan={3}>
+                                                    Rows
+                                                </TableCell>
+                                                <TableCell align="center" colSpan={4}>
+                                                    Bytes
+                                                </TableCell>
+                                                <TableCell align="center" colSpan={3}>
+                                                    Splits
+                                                </TableCell>
+                                            </TableRow>
+                                            <TableRow sx={{ '& th': { fontWeight: 600 } }}>
+                                                <TableCell>Stage</TableCell>
+                                                <TableCell>Nodes</TableCell>
+                                                <TableCell align="right">Processed</TableCell>
+                                                <TableCell align="right">Rate</TableCell>
+                                                <TableCell align="right">Current Rate</TableCell>
+                                                <TableCell align="right">Processed</TableCell>
+                                                <TableCell align="right">Rate</TableCell>
+                                                <TableCell align="right">Current Rate</TableCell>
+                                                <TableCell align="right">Input Processed</TableCell>
+                                                <TableCell align="right">Queued</TableCell>
+                                                <TableCell align="right">Running</TableCell>
+                                                <TableCell align="right">Done</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            <TableRow
+                                                sx={{
+                                                    '& td, & th': {
+                                                        color:
+                                                            response.stats.rootStage.state === 'RUNNING'
+                                                                ? 'text.primary'
+                                                                : 'text.disabled',
+                                                    },
+                                                }}
+                                                key="root_stage_stages"
+                                            >
+                                                <TableCell>0 (root)</TableCell>
+                                                <TableCell>{response.stats.rootStage.nodes}</TableCell>
+                                                <TableCell align="right">
+                                                    {this.rowCountToCorrectScale(
+                                                        response.stats.rootStage.processedRows
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {this.rowCountToCorrectScale(
+                                                        response.stats.rootStage.processedRows /
+                                                            (response.stats.rootStage.wallTimeMillis / 1000)
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right" />
+                                                <TableCell align="right">
+                                                    {this.bytesToCorrectScale(response.stats.rootStage.processedBytes)}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {this.bytesToCorrectScale(
+                                                        response.stats.rootStage.processedBytes /
+                                                            (response.stats.wallTimeMillis / 1000)
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right" />
+                                                <TableCell align="right">
+                                                    {this.bytesToCorrectScale(
+                                                        response.stats.rootStage.physicalInputBytes
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {response.stats.rootStage.queuedSplits}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {response.stats.rootStage.runningSplits}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {response.stats.rootStage.completedSplits}
+                                                </TableCell>
+                                            </TableRow>
+
+                                            {/* Sub-stages */}
+                                            {stages.map((subStageInfo: any) => (
+                                                <TableRow
+                                                    sx={{
+                                                        '& td, & th': {
+                                                            color:
+                                                                subStageInfo.stage.state === 'RUNNING'
+                                                                    ? 'text.primary'
+                                                                    : 'text.disabled',
+                                                        },
+                                                    }}
+                                                    key={`${response.id}-${subStageInfo.stage.stageId}`}
                                                 >
-                                                    <td className="status-stage-default">
-                                                        {subStageInfo.stage.stageId}
-                                                    </td>
-                                                    <td className="status-stage-default">{subStageInfo.stage.nodes}</td>
-                                                    <td className="status-stage-rows">
+                                                    <TableCell>{subStageInfo.stage.stageId}</TableCell>
+                                                    <TableCell>{subStageInfo.stage.nodes}</TableCell>
+                                                    <TableCell align="right">
                                                         {this.rowCountToCorrectScale(subStageInfo.stage.processedRows)}
-                                                    </td>
-                                                    <td className="status-stage-rows">
+                                                    </TableCell>
+                                                    <TableCell align="right">
                                                         {this.rowCountToCorrectScale(
                                                             subStageInfo.stage.processedRows /
                                                                 (subStageInfo.stage.wallTimeMillis / 1000)
                                                         )}
-                                                    </td>
-                                                    <td className="status-stage-rows"></td>
-                                                    <td className="status-stage-bytes">
+                                                    </TableCell>
+                                                    <TableCell align="right" />
+                                                    <TableCell align="right">
                                                         {this.bytesToCorrectScale(response.stats.processedBytes)}
-                                                    </td>
-                                                    <td className="status-stage-bytes">
+                                                    </TableCell>
+                                                    <TableCell align="right">
                                                         {this.bytesToCorrectScale(
                                                             subStageInfo.stage.processedBytes /
                                                                 (subStageInfo.stage.wallTimeMillis / 1000)
                                                         )}
-                                                    </td>
-                                                    <td className="status-stage-bytes"></td>
-                                                    <th className="status-stage-bytes">
+                                                    </TableCell>
+                                                    <TableCell align="right" />
+                                                    <TableCell align="right">
                                                         {this.bytesToCorrectScale(response.stats.physicalInputBytes)}
-                                                    </th>
-                                                    <td className="status-stage-splits">
+                                                    </TableCell>
+                                                    <TableCell align="right">
                                                         {subStageInfo.stage.queuedSplits}
-                                                    </td>
-                                                    <td className="status-stage-splits">
+                                                    </TableCell>
+                                                    <TableCell align="right">
                                                         {subStageInfo.stage.runningSplits}
-                                                    </td>
-                                                    <td className="status-stage-splits">
+                                                    </TableCell>
+                                                    <TableCell align="right">
                                                         {subStageInfo.stage.completedSplits}
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
-                                        <tr key="results_all_stages" className="stage-running">
-                                            <td className="status-stage-default">Total</td>
-                                            <td className="status-stage-default">{response.stats.nodes}</td>
-                                            <td className="status-stage-rows">
-                                                {this.rowCountToCorrectScale(response.stats.processedRows)}
-                                            </td>
-                                            <td className="status-stage-rows">
-                                                {this.rowCountToCorrectScale(
-                                                    response.stats.processedRows /
-                                                        (response.stats.elapsedTimeMillis / 1000)
-                                                )}
-                                            </td>
-                                            <td className="status-stage-rows">
-                                                {this.rowCountToCorrectScale(processedRowsSinceLast)}
-                                            </td>
-                                            <td className="status-stage-bytes">
-                                                {this.bytesToCorrectScale(response.stats.processedBytes)}
-                                            </td>
-                                            <td className="status-stage-bytes">
-                                                {this.bytesToCorrectScale(
-                                                    response.stats.processedBytes /
-                                                        (response.stats.elapsedTimeMillis / 1000)
-                                                )}
-                                            </td>
-                                            <td className="status-stage-bytes"></td>
-                                            <th className="status-stage-bytes">
-                                                {this.bytesToCorrectScale(response.stats.physicalInputBytes)}
-                                            </th>
-                                            <td className="status-stage-splits">{response.stats.queuedSplits}</td>
-                                            <td className="status-stage-splits">{response.stats.runningSplits}</td>
-                                            <td className="status-stage-splits">{response.stats.completedSplits}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : null}
-                    </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+
+                                        <TableFooter
+                                            sx={{
+                                                '& .MuiTableCell-footer': {
+                                                    fontWeight: (theme) => theme.typography.fontWeightBold,
+                                                    color: 'text.primary',
+                                                },
+                                            }}
+                                        >
+                                            {/* Totals */}
+                                            <TableRow key="results_all_stages">
+                                                <TableCell>Total</TableCell>
+                                                <TableCell>{response.stats.nodes}</TableCell>
+                                                <TableCell align="right">
+                                                    {this.rowCountToCorrectScale(response.stats.processedRows)}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {this.rowCountToCorrectScale(
+                                                        response.stats.processedRows /
+                                                            (response.stats.elapsedTimeMillis / 1000)
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {this.rowCountToCorrectScale(processedRowsSinceLast)}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {this.bytesToCorrectScale(response.stats.processedBytes)}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {this.bytesToCorrectScale(
+                                                        response.stats.processedBytes /
+                                                            (response.stats.elapsedTimeMillis / 1000)
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right" />
+                                                <TableCell align="right">
+                                                    {this.bytesToCorrectScale(response.stats.physicalInputBytes)}
+                                                </TableCell>
+                                                <TableCell align="right">{response.stats.queuedSplits}</TableCell>
+                                                <TableCell align="right">{response.stats.runningSplits}</TableCell>
+                                                <TableCell align="right">{response.stats.completedSplits}</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </TableContainer>
+                            ) : null}
+                        </Box>
+                    </>
+                ) : columns && columns.length ? (
+                    <Box
+                        sx={{
+                            // decrease the resultset size by the header size
+                            height: height - 42,
+                            overflowY: 'auto',
+                        }}
+                    >
+                        {this.renderTable(results, columns)}
+                    </Box>
                 ) : null}
-            </div>
+            </Box>
         )
     }
 }

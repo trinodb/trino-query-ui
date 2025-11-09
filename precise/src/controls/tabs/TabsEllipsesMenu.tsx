@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { Box, IconButton, Popover, TextField, List, ListItemButton, ListItemText } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import PushPinIcon from '@mui/icons-material/PushPin'
 import TabInfo from './TabInfo'
 
 interface TabsEllipsesMenuProps<T extends TabInfo> {
@@ -12,62 +15,61 @@ function TabsEllipsesMenu<T extends TabInfo>({
     onTabSelect,
     filterPlaceholder = 'Filter tabs...',
 }: TabsEllipsesMenuProps<T>) {
-    const [isOpen, setIsOpen] = useState(false)
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
     const [filter, setFilter] = useState('')
-    const menuRef = useRef<HTMLDivElement>(null)
 
+    const isOpen = Boolean(anchorEl)
     const filteredTabs = tabs.filter((tab) => tab.title.toLowerCase().includes(filter.toLowerCase()))
 
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [menuRef])
-
-    const handleEllipsesClick = (event: React.MouseEvent) => {
+    const handleEllipsesClick = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation()
-        setIsOpen(true)
+        setAnchorEl(event.currentTarget)
     }
 
+    const handleClosePopover = () => setAnchorEl(null)
+
     return (
-        <div className="tabs-ellipses-menu" ref={menuRef}>
-            <button className="ellipses-button" onClick={handleEllipsesClick}>
-                <span>...</span>
-            </button>
-            {isOpen && (
-                <div className="tabs-ellipses-menu-content">
-                    <input
-                        type="text"
+        <Box>
+            <IconButton size="small" aria-label="More tabs" onClick={handleEllipsesClick}>
+                <ExpandMoreIcon fontSize="small" />
+            </IconButton>
+            <Popover
+                open={isOpen}
+                anchorEl={anchorEl}
+                onClose={handleClosePopover}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                slotProps={{ paper: { sx: { p: 1, width: 280 } } }}
+            >
+                <Box onMouseDown={(e) => e.stopPropagation()}>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        size="small"
+                        type="search"
                         placeholder={filterPlaceholder}
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        autoFocus
+                        sx={{ mb: 1 }}
                     />
-                    <div className="tab-list">
+                    <List dense disablePadding sx={{ maxHeight: 300, overflow: 'auto' }}>
                         {filteredTabs.map((tab) => (
-                            <div
+                            <ListItemButton
                                 key={tab.id}
-                                className={`tab-item ${tab.isPinned ? 'pinned' : ''}`}
                                 onClick={() => {
                                     onTabSelect(tab.id)
-                                    setIsOpen(false)
+                                    handleClosePopover()
                                 }}
+                                sx={{ gap: 1 }}
                             >
-                                <span className="tab-name">{tab.title}</span>
-                                {tab.isPinned && <span className="pinned-indicator">📌</span>}
-                            </div>
+                                <ListItemText primary={tab.title} slotProps={{ primary: { noWrap: true } }} />
+                                {tab.isPinned && <PushPinIcon fontSize="small" sx={{ opacity: 0.7 }} />}
+                            </ListItemButton>
                         ))}
-                    </div>
-                </div>
-            )}
-        </div>
+                    </List>
+                </Box>
+            </Popover>
+        </Box>
     )
 }
 

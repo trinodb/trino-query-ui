@@ -1,6 +1,6 @@
 {
   "name": "trino-query-ui",
-  "description": "Trino Query Editor react component",
+  "description": "Trino query editor React component",
   "version": "0.0.1",
   "author": {
     "name": "Trino contributors",
@@ -40,13 +40,15 @@
     "antlr4ng": "antlr4ng -visitor -listener -Dlanguage=TypeScript -o src/generated/lexer/SqlBase.g4 trino/SqlBase.g4"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "@mui/x-data-grid": "^8.14.0",
+    "@mui/x-tree-view": "^8.13.1",
     "antlr4-c3": "^3.4.4",
     "antlr4ng": "^3.0.16",
-    "lucide-react": "^0.544.0",
-    "prettier": "^3.6.2",
-    "react-dnd": "^16.0.1",
-    "react-dnd-html5-backend": "^16.0.1",
     "sql-formatter": "^15.6.9",
     "uuidv4": "^6.2.13"
   },
@@ -60,6 +62,7 @@
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.21",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.7"
   },

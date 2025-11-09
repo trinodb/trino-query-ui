@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react'
+import { Alert, Box, IconButton, Typography } from '@mui/material'
+import { TreeItem } from '@mui/x-tree-view'
+import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined'
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
+import TableRowsOutlined from '@mui/icons-material/TableRowsOutlined'
 import Table from '../../schema/Table'
 import SchemaProvider from '../../sql/SchemaProvider'
 import TableReference from '../../schema/TableReference'
 import CatalogViewerColumn from './CatalogViewerColumn'
 import { buildPath } from './ViewerState'
-import './catalogviewer.css'
-import { ChevronRight } from 'lucide-react'
 
 interface CatalogViewerTableProps {
     tableRef: TableReference
     filterText: string
     isExpanded: boolean
     isVisible: (path: string) => boolean
+    isLoading: boolean
     hasMatchingChildren: (path: string) => boolean
-    onToggle: (path: string) => Promise<void>
     onGenerateQuery?: (queryType: string, tableRef: TableReference) => void
 }
 
@@ -22,7 +25,7 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     filterText,
     isExpanded,
     isVisible,
-    onToggle,
+    isLoading,
     onGenerateQuery,
 }) => {
     const [table, setTable] = useState<Table>(() => new Table(tableRef.tableName))
@@ -63,60 +66,70 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     }
 
     return (
-        <div className="table-section">
-            <div className="table-header">
-                <div className="viewer_table" onClick={() => onToggle(tablePath)}>
-                    <span className="table-name">{table.getName()}</span>
-                    <span className="helper-text">table</span>
-                    <span className="expand-indicator">{isExpanded ? '▼' : '▶'}</span>
+        <TreeItem
+            key={tablePath}
+            itemId={tablePath}
+            slots={{
+                icon: !table.isLoading() ? TableRowsOutlined : HourglassEmptyOutlinedIcon,
+            }}
+            label={
+                <Box
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                    }}
+                >
+                    <Typography fontSize="small">{table.getName()}</Typography>
 
-                    {onGenerateQuery && (
-                        <div
-                            className="generate-query-button"
-                            onClick={handleGenerateQuery}
-                            title="Generate SELECT query for this table"
-                        >
-                            <ChevronRight size={16} />
-                        </div>
-                    )}
-                </div>
-            </div>
+                    <IconButton
+                        title="Generate SELECT query for this table"
+                        size="small"
+                        sx={{ ml: 'auto' }}
+                        onClick={handleGenerateQuery}
+                        disabled={isLoading}
+                    >
+                        <SearchOutlinedIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                </Box>
+            }
+            slotProps={{
+                label: {
+                    style: {
+                        overflow: 'visible',
+                    },
+                },
+            }}
+        >
+            <Box>
+                {table.getError() ? (
+                    <Alert severity="error">{table.getError()}</Alert>
+                ) : table.getColumns().length === 0 && table.isLoading() ? null : (
+                    table.getColumns().length > 0 &&
+                    table.getColumns().map((column) => {
+                        const columnPath = buildPath.column(
+                            tableRef.catalogName,
+                            tableRef.schemaName,
+                            tableRef.tableName,
+                            column.getName()
+                        )
 
-            {isExpanded && (
-                <div className="viewer_table_body">
-                    {table.getError() ? (
-                        <div className="error-message">{table.getError()}</div>
-                    ) : table.getColumns().length === 0 && isExpanded && table.isLoading() ? (
-                        <div className="loading-message">Loading columns...</div>
-                    ) : (
-                        table.getColumns().length > 0 &&
-                        table.getColumns().map((column) => {
-                            const columnPath = buildPath.column(
-                                tableRef.catalogName,
-                                tableRef.schemaName,
-                                tableRef.tableName,
-                                column.getName()
-                            )
+                        if (!isVisible(columnPath)) {
+                            return null
+                        }
 
-                            if (!isVisible(columnPath)) {
-                                return null
-                            }
-
-                            return (
-                                <CatalogViewerColumn
-                                    key={columnPath}
-                                    tableRef={tableRef}
-                                    column={column}
-                                    isExpanded={isExpanded}
-                                    isVisible={isVisible}
-                                    onToggle={onToggle}
-                                />
-                            )
-                        })
-                    )}
-                </div>
-            )}
-        </div>
+                        return (
+                            <CatalogViewerColumn
+                                key={columnPath}
+                                tableRef={tableRef}
+                                column={column}
+                                isVisible={isVisible}
+                            />
+                        )
+                    })
+                )}
+            </Box>
+        </TreeItem>
     )
 }
 
