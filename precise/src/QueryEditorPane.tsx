@@ -1,4 +1,8 @@
 import React from 'react'
+import { Box, Stack, Tooltip, IconButton } from '@mui/material'
+import CodeIcon from '@mui/icons-material/Code'
+import Maximize from '@mui/icons-material/Maximize'
+import Minimize from '@mui/icons-material/Minimize'
 import Editor from '@monaco-editor/react'
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
 import Queries from './schema/Queries'
@@ -20,26 +24,27 @@ import Column from './schema/Column'
 import NamedQuery from './sql/NamedQuery'
 import { tokenMap } from './sql/TokenMap'
 import SubstitutionEditor from './SubstitutionEditor'
-import './style/query-editor.css'
 import { format } from 'sql-formatter'
-import { Code, Maximize2, Minimize2 } from 'lucide-react'
 
 const TRINO_SQL_LANGUAGE = 'trinosql'
+const TABS_HEIGHT = 64
 
 interface QueryEditorPaneProps {
     queries: Queries
+    maxHeight: number
     onQueryChange: (query: string) => void
     onSelectChange: (selectedText: string) => void
     onExecute: () => void
     catalog?: string
     schema?: string
+    theme?: string
 }
 
 interface QueryEditorPaneState {
     currentQuery: QueryInfo | null
     substitutions: Record<string, string>
     isMaximized: boolean
-    height: string
+    height: number
     width: string
 }
 
@@ -106,7 +111,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             currentQuery: props.queries.getCurrentQuery(),
             substitutions: {},
             isMaximized: false,
-            height: '40vh',
+            height: this.props.maxHeight / 2,
             width: '100%',
         }
     }
@@ -117,6 +122,12 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
     componentDidMount() {
         this.props.queries.addChangeListener(this.handleQueriesChange)
+    }
+
+    componentDidUpdate(prevProps: QueryEditorPaneProps) {
+        if (prevProps.maxHeight !== this.props.maxHeight) {
+            this.handleHeightChange(this.props.maxHeight)
+        }
     }
 
     componentWillUnmount() {
@@ -145,7 +156,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     }
 
     handleTabCreate = () => {
-        const newQuery = this.props.queries.addQuery(false, 'New Query')
+        const newQuery = this.props.queries.addQuery(false, 'New query')
         monaco.editor.createModel('', TRINO_SQL_LANGUAGE, monaco.Uri.parse(`file:///${newQuery.id}`))
         this.props.queries.setCurrentQuery(newQuery.id)
         return newQuery.id
@@ -177,8 +188,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     toggleMaximize = () => {
         this.setState((prevState) => ({
             isMaximized: !prevState.isMaximized,
-            // 2.5 em for the tab bar, 3em for the substitution editor, 3em for the brand bar
-            height: !prevState.isMaximized ? 'calc(100vh - 2.5em - 3em - 3.5em)' : '40vh',
+            height: !prevState.isMaximized ? this.props.maxHeight : this.props.maxHeight / 2,
             width: '100%',
         }))
     }
@@ -851,8 +861,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         }
     }
 
-    handleHeightChange = (newHeight: string) => {
-        this.setState({ height: newHeight })
+    handleHeightChange = (maxHeight: number) => {
+        this.setState({ height: this.state.isMaximized ? maxHeight : maxHeight / 2 })
     }
 
     render() {
@@ -876,36 +886,51 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                     query={this.state.currentQuery?.query || ''}
                     onSubstitutionChange={this.handleSubstitutionChange}
                 />
-                <div style={{ position: 'relative', width: '100%' }}>
-                    <div style={{ position: 'relative' }}>
-                        <div className="editor-toolbar">
-                            <button
-                                className="editor-button"
-                                onClick={this.formatSql}
-                                disabled={false}
-                                data-tooltip="Format SQL (Alt+Shift+F)"
-                            >
-                                <Code size={18} strokeWidth={1.5} />
-                            </button>
-                            <button
-                                className="editor-button"
-                                onClick={this.toggleMaximize}
-                                data-tooltip={isMaximized ? 'Minimize' : 'Maximize'}
-                            >
+                <Box sx={{ position: 'relative', width: '100%' }}>
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={(theme) => ({
+                            position: 'absolute',
+                            alignItems: 'center',
+                            background: theme.palette.background.default,
+                            border: 1,
+                            borderColor: theme.palette.divider,
+                            boxShadow: 1,
+                            px: 0.5,
+                            top: 0,
+                            right: 15,
+                            zIndex: 1000,
+                        })}
+                    >
+                        <Tooltip title="Format SQL (Alt+Shift+F)">
+                            <IconButton size="small" onClick={this.formatSql}>
+                                <CodeIcon sx={{ fontSize: '1.2rem' }} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title={isMaximized ? 'Minimize' : 'Maximize'}>
+                            <IconButton size="small" onClick={this.toggleMaximize}>
                                 {isMaximized ? (
-                                    <Minimize2 size={18} strokeWidth={1.5} />
+                                    <Minimize sx={{ fontSize: '1.2rem' }} />
                                 ) : (
-                                    <Maximize2 size={18} strokeWidth={1.5} />
+                                    <Maximize sx={{ fontSize: '1.2rem' }} />
                                 )}
-                            </button>
-                        </div>
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                    <Box
+                        sx={{
+                            height: height - TABS_HEIGHT,
+                        }}
+                    >
                         <Editor
-                            height={height}
+                            height={'100%'}
                             width={width}
                             language="trinosql"
-                            theme="vs-dark"
+                            theme={this.props.theme === 'dark' ? 'vs-dark' : 'vss'}
                             value={currentQuery?.query || ''}
                             options={{
+                                automaticLayout: true,
                                 selectOnLineNumbers: true,
                                 minimap: { enabled: isMaximized },
                                 // Add these options for better editing experience
@@ -916,8 +941,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             onMount={this.editorDidMount}
                             onChange={this.handleEditorChange}
                         />
-                    </div>
-                </div>
+                    </Box>
+                </Box>
             </>
         )
     }

@@ -1,8 +1,7 @@
 import React, { Component } from 'react'
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
-import './tabs.css'
-import TabItem from './TabItem'
+import { Box, Divider, IconButton, Tab as MuiTab, Tabs as MuiTabs } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import CloseIcon from '@mui/icons-material/Close'
 import TabsEllipsesMenu from './TabsEllipsesMenu'
 import Tabs from './Tabs'
 import TabInfo from './TabInfo'
@@ -131,29 +130,69 @@ class EnterpriseTabs<T extends TabInfo> extends Component<EnterpriseTabsProps<T>
         const { newTabLabel = '+' } = this.props
 
         return (
-            <DndProvider backend={HTML5Backend}>
-                <div className="tabs-container">
-                    <div className="tabs">
-                        {tabs.map((tab, index) => (
-                            <TabItem
+            <Box>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        width: '100%',
+                    }}
+                >
+                    <MuiTabs
+                        value={currentTabId}
+                        variant="scrollable"
+                        onChange={(_, id) => this.handleTabClick(id)}
+                        sx={{ flexGrow: 1 }}
+                    >
+                        {tabs.map((tab) => (
+                            <MuiTab
                                 key={tab.id}
-                                tab={tab}
-                                isActive={tab.id === currentTabId}
-                                index={index}
-                                moveTab={this.moveTab}
-                                handleTabClick={() => this.handleTabClick(tab.id)}
-                                handleTabClose={() => this.handleTabClose(tab.id)}
-                                handleTabRename={(id, newTitle) => this.handleTabRename(tab.id, newTitle)}
-                                handleTabPin={() => this.handleTabPin(tab.id)}
+                                value={tab.id}
+                                label={tab.title}
+                                sx={{ minHeight: 36, py: 0 }}
+                                icon={
+                                    <IconButton
+                                        component="span"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            this.handleTabClose(tab.id)
+                                        }}
+                                    >
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                }
+                                iconPosition="end"
                             />
                         ))}
-                        <div onClick={this.handleNewTab} className="controltab">
-                            {newTabLabel}
-                        </div>
-                    </div>
-                    <TabsEllipsesMenu tabs={tabs} onTabSelect={this.handleTabSelectAndPromote} />
-                </div>
-            </DndProvider>
+                        <MuiTab
+                            value="Add query"
+                            icon={
+                                <IconButton
+                                    component="span"
+                                    size="small"
+                                    tabIndex={-1}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        this.handleNewTab()
+                                    }}
+                                >
+                                    <AddIcon fontSize="small" />
+                                </IconButton>
+                            }
+                            aria-label="Add tab"
+                            sx={{ minWidth: 0, px: 1 }}
+                            disableRipple
+                        />
+                    </MuiTabs>
+                    <Box sx={{ ml: 'auto', pr: 1 }}>
+                        <TabsEllipsesMenu tabs={tabs} onTabSelect={this.handleTabSelectAndPromote} />
+                    </Box>
+                </Box>
+
+                <Divider />
+            </Box>
         )
     }
 }

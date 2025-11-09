@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import { Box, Stack, Typography, TextField, InputAdornment, IconButton } from '@mui/material'
+import ClearIcon from '@mui/icons-material/Clear'
 
 interface SubstitutionField {
     name: string
@@ -60,21 +62,52 @@ const SubstitutionEditor: React.FC<SubstitutionEditorProps> = ({ query, onSubsti
     }
 
     return (
-        <div className="substitution-editor">
-            <h3>Query Parameters</h3>
-            {fields.map((field) => (
-                <div key={field.name} className="substitution-field">
-                    <label htmlFor={field.name}>{field.name}:</label>
-                    <input
-                        type={field.type === 'varchar' ? 'text' : 'number'}
-                        id={field.name}
-                        value={values[field.name] || ''}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        placeholder={field.defaultValue}
-                    />
-                </div>
-            ))}
-        </div>
+        <Box sx={{ p: 1 }}>
+            <Typography variant="h6">Query Parameters</Typography>
+            <Stack spacing={1}>
+                {fields.map((field) => {
+                    const isNumber = field.type !== 'varchar'
+                    const val = values[field.name] ?? ''
+
+                    return (
+                        <TextField
+                            key={field.name}
+                            label={field.name}
+                            size="small"
+                            fullWidth
+                            variant="outlined"
+                            type={isNumber ? 'number' : 'text'}
+                            value={val}
+                            onChange={(e) => handleInputChange(field.name, e.target.value)}
+                            placeholder={field.defaultValue !== undefined ? String(field.defaultValue) : ''}
+                            slotProps={{
+                                input: {
+                                    // helpful for numeric types
+                                    inputProps: isNumber ? { step: field.type === 'double' ? 'any' : 1 } : undefined,
+                                    // optional clear button (keeps width stable when empty)
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                size="small"
+                                                edge="end"
+                                                aria-label={`Clear ${field.name}`}
+                                                onClick={() => handleInputChange(field.name, '')}
+                                                sx={{
+                                                    visibility: val ? 'visible' : 'hidden',
+                                                    '& .MuiSvgIcon-root': { fontSize: 16 },
+                                                }}
+                                            >
+                                                <ClearIcon />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                        />
+                    )
+                })}
+            </Stack>
+        </Box>
     )
 }
 
