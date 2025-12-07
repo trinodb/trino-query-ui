@@ -1,8 +1,12 @@
 # Trino Query UI
 
-A reusable React component for executing queries against Trino. It can be
-embedded into any React application and configured to proxy requests to a local
-or remote Trino cluster.
+A reusable React component as a query interface for the SQL query engine
+[Trino](https://trino.io/). Browse connected catalogs, write SQL queries,
+execute the queries and inspect result data all in a web application connected
+to your Trino cluster.
+
+The component can be embedded into any React application and configured to proxy
+requests to a local or remote Trino cluster.
 
 > [!WARNING]
 > This package is under heavy development and is not yet recommended for
@@ -12,13 +16,31 @@ or remote Trino cluster.
 ![Trino Query UI](screenshot.png "Trino Query UI")
 
 Implementation details:
+
 * React TypeScript project with Vite
 * Uses Node.js v20+
 * Monaco editor + ANTLR parser using the Trino language
 
+## Features
+
+* Browse metadata about catalogs, schemas, tables, and more
+* Search across catalogs
+* Set queries session context.
+* Inspect data with generated queries
+* Preview sample data
+* Write queries manually with schema-aware SQL syntax completion and
+  highlighting
+* Use multiple query tabs
+* View schema information in SQL queries via mouse-over hovering
+* Format SQL queries in the editor
+* Copy result set table data to the clipboard
+* Monitor query processing across the Trino cluster
+
+See details in the [demo animation](./demos.gif).
+
 ## Installation
 
-```
+```shell
 npm install trino-query-ui
 ```
 
@@ -38,20 +60,22 @@ export default MyTrinoApp
 ## Building and shipping in Trino
 
 The Query UI builds just like the existing UI in Trino.
-1. First you build the TypeScript into Javascript and CSS
-2. Then copy the distributable path into Trino.
-3. Then modify Trino to respond to the query ui path.
+
+1. Build the TypeScript into Javascript and CSS
+2. Copy the distributable path into Trino.
+3. Modify Trino to respond to the query ui path.
 
 ### Building for integration
 
-```
+```shell
 cd precise
+npm install
 npm run build
 ```
 
 ### Copying into Trino
 
-```
+```shell
 mkdir -p $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
 cp -r dist/* $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
 ```
@@ -119,8 +143,10 @@ Add `/query/` path. Note any path can be used:
 ### Build and run
 
 1. Install Node.js (v20 or newer) from <https://nodejs.org/en/download/>
-2. Install the dependencies and run the dev server:
-```
+2. Ensure Trino is running at the configured URL. Defaults to http://localhost:8080
+3. Install the dependencies and run the dev server:
+
+```shell
 cd precise
 npm install
 npm run dev
@@ -130,9 +156,9 @@ The local URL is displayed, and you can open it in your browser.
 
 ### Set up proxying to a local Trino instance
 
-Update `vite.config.ts` with the following so that queries can be
-proxied to Trino's query endpoint running on `http://localhost:8080` (or any
-other path you require).
+By default `vite.config.ts` is configured so that queries can be proxied to
+Trino's query endpoint running on `http://localhost:8080`. Modify the setting to
+suit your needs with another URL and updated configuration:
 
 ```tsx
 import { defineConfig } from 'vite'
@@ -157,23 +183,27 @@ export default defineConfig({
 
 ### Building the parser
 
-Run `npm run antlr4ng` to build the parser, as configured in **package.json**.
+Build the parser, as configured in **package.json**.
+
+```shell
+npm run antlr4ng
+```
 
 ### Linting and code formatting
 
-To check code quality and formatting:
+To check code quality and formatting with ESLint and Prettier, as defined in
+**package.json**:
 
 ```shell
-  npm run check
+npm run check
 ```
-
-This command runs both ESLint and Prettier, as defined in **package.json**.
 
 ## Philosophy
 
 This UI's purpose is to provide an environment where, once the cluster is up,
 you can immediately execute queries and explore data sets. The intended use
 cases are:
+
 * Initial proof-of-concept queries.
 * Exploration of data sets.
 * Performance analysis.
@@ -183,6 +213,7 @@ cases are:
 * Early demos.
 
 The approach:
+
 1. Direct integration into the Trino UI
     - No need for an additional authentication hop (although it could be added
       in the future)
