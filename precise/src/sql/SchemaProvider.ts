@@ -63,7 +63,10 @@ class SchemaProvider {
         return null
     }
 
-    static populateCatalogsAndRefreshTableList(callback: any = null, errorCallback: any = null) {
+    static populateCatalogsAndRefreshTableList(
+        callback: ((nextCatalogs: Map<string, Catalog>) => void) | null = null,
+        errorCallback: ((error: string) => void) | null = null
+    ) {
         // refresh catalogs
         new TrinoQueryRunner()
             .SetAllResultsCallback((results: any[], isError: boolean) => {
@@ -73,7 +76,6 @@ class SchemaProvider {
                         this.catalogs.set(catalog.getName(), catalog)
                     }
                     this.lastSchemaFetchError = undefined
-                    callback()
 
                     // refresh tables and schemas for this catalog
                     new TrinoQueryRunner()
@@ -97,7 +99,7 @@ class SchemaProvider {
                             if (!isError) {
                                 catalog.clearErrorMessage()
                             }
-                            callback()
+                            callback?.(new Map(this.catalogs))
                         })
                         .SetErrorMessageCallback((error: string) => {
                             catalog.setErrorMessage(error.toString())
@@ -111,7 +113,7 @@ class SchemaProvider {
             })
             .SetErrorMessageCallback((error: string) => {
                 this.lastSchemaFetchError = error.toString()
-                errorCallback(error.toString())
+                errorCallback?.(error.toString())
             })
             .StartQuery('select catalog_name, connector_name from system.metadata.catalogs')
     }

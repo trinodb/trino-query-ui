@@ -9,7 +9,7 @@ or remote Trino cluster.
 > production workloads. Treat the current release as an early-stage demo;
 > production-ready builds and documentation are planned.
 
-![Trino Query UI Demo](demos.gif "Trino Query UI Demo")
+![Trino Query UI](screenshot.png "Trino Query UI")
 
 Implementation details:
 * React TypeScript project with Vite
@@ -29,7 +29,7 @@ import { QueryEditor } from 'trino-query-ui'
 import 'trino-query-ui/dist/index.css'
 
 function MyTrinoApp() {
-  return <QueryEditor />
+  return <QueryEditor theme="dark" height={800} />
 }
 
 export default MyTrinoApp
@@ -51,8 +51,10 @@ npm run build
 
 ### Copying into Trino
 
+```
 mkdir -p $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
 cp -r dist/* $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
+```
 
 ### Modifying Trino to respond to /query/
 
@@ -126,7 +128,7 @@ npm run dev
 
 The local URL is displayed, and you can open it in your browser.
 
-### Set Up proxying to a local Trino instance
+### Set up proxying to a local Trino instance
 
 Update `vite.config.ts` with the following so that queries can be
 proxied to Trino's query endpoint running on `http://localhost:8080` (or any
@@ -182,19 +184,19 @@ cases are:
 
 The approach:
 1. Direct integration into the Trino UI
-   - No need for an additional authentication hop (although it could be added
-     in the future)
-   - Authenticates as the user executing the query when using OAuth2
-   - Trino does the heavy lifting
+    - No need for an additional authentication hop (although it could be added
+      in the future)
+    - Authenticates as the user executing the query when using OAuth2
+    - Trino does the heavy lifting
 2. Remove friction so you can simply write a query
-   - Autocomplete understands the Trino language, tables, and columns
-   - Provides syntax highlighting and validation
-   - Offers a comprehensive catalog explorer
+    - Autocomplete understands the Trino language, tables, and columns
+    - Provides syntax highlighting and validation
+    - Offers a comprehensive catalog explorer
 3. Avoid black-box query execution
-   - Show progress and execution details. People ask "why is my query slow?"
-     mostly because they only see a spinner for minutes.
-   - Link to the Trino Query UI to drill into query performance
-   - Show stages and split counts like the Trino console client
+    - Show progress and execution details. People ask "why is my query slow?"
+      mostly because they only see a spinner for minutes.
+    - Link to the Trino Query UI to drill into query performance
+    - Show stages and split counts like the Trino console client
 4. Keep the experience easy to navigate
 
 ### Gaps and future direction

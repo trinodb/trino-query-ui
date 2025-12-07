@@ -1,33 +1,109 @@
-import React from 'react'
+import React, { useRef, useState } from 'react'
+import { styled } from '@mui/material/styles'
+import { Box, Drawer, useMediaQuery } from '@mui/material'
+import CssBaseline from '@mui/material/CssBaseline'
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar'
+import { ThemeProvider } from '@mui/material/styles'
 import QueryCell from './QueryCell'
+import { darkTheme, lightTheme } from './theme'
 import Queries from './schema/Queries'
+import QueryInfo from './schema/QueryInfo'
 import CatalogViewer from './controls/catalog_viewer/CatalogViewer'
-import './style/components.css'
-import './style/control.css'
-import './style/layout.css'
-import './style/normalize.css'
-import './style/query-editor.css'
-import './style/results.css'
-import './style/theme.css'
 
-type QueryEditorProps = Record<string, never>
-
-interface QueryEditorState {
-    queries: Queries
+interface IQueryEditor {
+    height: number
+    theme?: 'dark' | 'light'
+    enableCatalogSearchColumns?: boolean
 }
 
-class QueryEditor extends React.Component<QueryEditorProps, QueryEditorState> {
-    constructor(props: QueryEditorProps) {
-        super(props)
+const DRAWER_WIDTH = 260
 
-        this.state = {
-            queries: new Queries(),
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
+    open?: boolean
+}>(({ theme }) => ({
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: 0,
+    variants: [
+        {
+            props: ({ open }) => open,
+            style: {
+                transition: theme.transitions.create('margin', {
+                    easing: theme.transitions.easing.easeOut,
+                    duration: theme.transitions.duration.enteringScreen,
+                }),
+                marginLeft: `${DRAWER_WIDTH}px`,
+            },
+        },
+    ],
+}))
+
+interface AppBarProps extends MuiAppBarProps {
+    open?: boolean
+}
+
+const AppBar = styled(MuiAppBar, {
+    shouldForwardProp: (prop) => prop !== 'open',
+})<AppBarProps>(({ theme }) => ({
+    position: 'absolute',
+    boxShadow: 'none',
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    transition: theme.transitions.create(['margin', 'width'], {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    variants: [
+        {
+            props: ({ open }) => open,
+            style: {
+                width: `calc(100% - ${DRAWER_WIDTH}px)`,
+                marginLeft: `${DRAWER_WIDTH}px`,
+                transition: theme.transitions.create(['margin', 'width'], {
+                    easing: theme.transitions.easing.easeOut,
+                    duration: theme.transitions.duration.enteringScreen,
+                }),
+            },
+        },
+    ],
+}))
+
+export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQueryEditor) => {
+    const [queries, setQueries] = useState<Queries>(() => new Queries())
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(true)
+    const [queryRunning, setQueryRunning] = useState<boolean>(false)
+    const [currentQuery, setCurrentQuery] = useState<QueryInfo>(queries.getCurrentQuery())
+    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
+    const containerRef = useRef(null)
+
+    const muiThemeToUse = () => {
+        if (theme === 'dark') {
+            return darkTheme
+        } else if (theme === 'light') {
+            return lightTheme
+        } else if (prefersDarkMode) {
+            return darkTheme
+        } else {
+            return lightTheme
         }
     }
 
-    setQueryContent = (query: string, catalog?: string, schema?: string) => {
-        const currentQuery = this.state.queries.getCurrentQuery()
-        const updates: any = {}
+    const applyQueryUpdates = (updates: Partial<QueryInfo>) => {
+        const activeQuery = queries.getCurrentQuery()
+
+        if (!activeQuery) {
+            return
+        }
+
+        queries.updateQuery(activeQuery.id, updates)
+        setCurrentQuery((prev) => ({ ...prev, ...updates }))
+    }
+
+    const setQueryContent = (query: string, catalog?: string, schema?: string) => {
+        const updates: Partial<QueryInfo> = {}
 
         if (query) {
             updates.query = query
@@ -41,79 +117,92 @@ class QueryEditor extends React.Component<QueryEditorProps, QueryEditorState> {
             updates.schema = schema
         }
 
-        this.state.queries.updateQuery(currentQuery.id, updates)
+        applyQueryUpdates(updates)
     }
 
-    appendQueryContent = (query: string, catalog?: string, schema?: string) => {
-        const currentQuery = this.state.queries.getCurrentQuery()
-        const updates: any = {}
+    const appendQueryContent = (query: string, catalog?: string, schema?: string) => {
+        const activeQuery = queries.getCurrentQuery()
+        const updates: Partial<QueryInfo> = {}
 
-        if (query) {
-            // Append to existing query, adding newlines as needed
-            const existingQuery = currentQuery.query || ''
-            const separator = existingQuery.trim() === '' ? '' : '\n\n'
+        if (query !== undefined) {
+            const existingQuery = activeQuery.query || ''
+            const separator = existingQuery.trim() === '' || query.trim() === '' ? '' : '\n\n'
             updates.query = existingQuery + separator + query
         }
 
-        if (catalog) {
+        if (catalog !== undefined) {
             updates.catalog = catalog
         }
 
-        if (schema) {
+        if (schema !== undefined) {
             updates.schema = schema
         }
 
-        this.state.queries.updateQuery(currentQuery.id, updates)
+        applyQueryUpdates(updates)
     }
 
-    render() {
-        return (
-            <div className="query-editor" key="query-editor">
-                <div className="branding-header"></div>
-                <div className="pagegrid" id="pagegrid">
-                    <div className="catalog" id="catalog-container">
-                        <div className="branding-padder"></div>
-                        <div className="catalog-wrapper">
-                            <CatalogViewer
-                                onGenerateQuery={this.setQueryContent}
-                                onAppendQuery={this.appendQueryContent}
-                            />
-                        </div>
-                    </div>
+    return (
+        <ThemeProvider theme={muiThemeToUse()}>
+            <CssBaseline />
+            <Box
+                ref={containerRef}
+                sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    height: height,
+                }}
+            >
+                <AppBar color="transparent" open={drawerOpen} />
 
-                    <button
-                        className="collapse-button"
-                        onClick={() => {
-                            const pagegrid = document.getElementById('pagegrid')
-                            if (pagegrid) {
-                                if (
-                                    pagegrid.style.gridTemplateColumns === '0vw 100vw' ||
-                                    pagegrid.style.gridTemplateColumns === ''
-                                ) {
-                                    pagegrid.style.gridTemplateColumns = '20vw 80vw'
-                                    pagegrid.classList.remove('catalog-collapsed')
-                                    pagegrid.classList.add('catalog-expanded')
-                                } else {
-                                    pagegrid.style.gridTemplateColumns = '0vw 100vw'
-                                    pagegrid.classList.remove('catalog-expanded')
-                                    pagegrid.classList.add('catalog-collapsed')
-                                }
-                            }
-                        }}
-                    >
-                        &#187; Catalogs
-                    </button>
+                <Drawer
+                    sx={{
+                        width: DRAWER_WIDTH,
+                        flexShrink: 0,
+                        '& .MuiDrawer-paper': {
+                            width: DRAWER_WIDTH,
+                            boxSizing: 'border-box',
+                        },
+                    }}
+                    variant="persistent"
+                    anchor="left"
+                    open={drawerOpen}
+                    ModalProps={{
+                        container: containerRef.current,
+                        disablePortal: true,
+                    }}
+                    slotProps={{
+                        paper: {
+                            sx: {
+                                position: 'absolute',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden',
+                            },
+                        },
+                    }}
+                >
+                    <CatalogViewer
+                        onGenerateQuery={setQueryContent}
+                        onAppendQuery={appendQueryContent}
+                        onDrawerToggle={() => setDrawerOpen(false)}
+                        enableSearchColumns={enableCatalogSearchColumns}
+                    />
+                </Drawer>
 
-                    <div className="cards" id="cards">
-                        <div className="branding-padder"></div>
-                        <div className="card" key="card">
-                            <QueryCell queries={this.state.queries} />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+                <Main open={drawerOpen} sx={{ p: 0 }}>
+                    <QueryCell
+                        queries={queries}
+                        drawerOpen={drawerOpen}
+                        height={height}
+                        onDrawerToggle={() => setDrawerOpen(true)}
+                        theme={theme}
+                    />
+                </Main>
+            </Box>
+        </ThemeProvider>
+    )
 }
 
 export default QueryEditor

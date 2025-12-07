@@ -19,7 +19,7 @@ export const buildPath = {
 }
 
 export class ViewerStateManager {
-    private userExpanded = new Set<string>()
+    public userExpanded = new Set<string>()
     private matches = new Set<string>()
     private onStateUpdate: StateUpdateCallback
     private isSearching = false

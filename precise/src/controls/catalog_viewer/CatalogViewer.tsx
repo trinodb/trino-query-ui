@@ -1,21 +1,45 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import {
+    Alert,
+    AlertTitle,
+    Box,
+    Checkbox,
+    Chip,
+    CircularProgress,
+    Grid,
+    FormControlLabel,
+    IconButton,
+    LinearProgress,
+    TextField,
+    Typography,
+    Divider,
+} from '@mui/material'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined'
+import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
+import CatalogViewerSchema from './CatalogViewerSchema'
 import SchemaProvider from './../../sql/SchemaProvider'
 import Catalog from './../../schema/Catalog'
 import TableReference from '../../schema/TableReference'
-import CatalogViewerSchema from './CatalogViewerSchema'
-import ErrorBox from './../../utils/ErrorBoxProvider'
-import CloseIcon from '../../assets/close.png'
 import { ViewerStateManager, buildPath } from './ViewerState'
-import './catalogviewer.css'
-import { Loader2, ChevronRight } from 'lucide-react'
 
 interface CatalogViewerProps {
     initialFilterText?: string
     onGenerateQuery?: (query: string, catalog?: string, schema?: string) => void
     onAppendQuery?: (query: string, catalog?: string, schema?: string) => void
+    onDrawerToggle?: () => void
+    enableSearchColumns?: boolean
 }
 
-const CatalogViewer: React.FC<CatalogViewerProps> = ({ initialFilterText = '', onGenerateQuery, onAppendQuery }) => {
+const CatalogViewer: React.FC<CatalogViewerProps> = ({
+    initialFilterText = '',
+    onGenerateQuery,
+    onAppendQuery,
+    onDrawerToggle,
+    enableSearchColumns,
+}) => {
     // Basic state
     const [catalogs, setCatalogs] = useState<Map<string, Catalog>>(new Map())
     const [errorMessage, setErrorMessage] = useState<string>()
@@ -70,8 +94,8 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({ initialFilterText = '', o
 
         try {
             await SchemaProvider.populateCatalogsAndRefreshTableList(
-                () => {
-                    setCatalogs(SchemaProvider.catalogs)
+                (nextCatalogs) => {
+                    setCatalogs(nextCatalogs)
                     setIsLoading(false)
                 },
                 (error: string) => {
@@ -153,91 +177,184 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({ initialFilterText = '', o
     }
 
     return (
-        <div className="catalog-viewer">
-            <div className="catalog-viewer-header">
-                <div className="search-container">
-                    <input
-                        type="text"
-                        placeholder="Filter schemas, tables, and columns..."
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                height: '100%',
+                overflow: 'hidden',
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    minHeight: (theme) => `calc(${theme.mixins.toolbar.minHeight}px + ${theme.spacing(1)})`,
+                    px: 0,
+                    py: 0,
+                }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 0,
+                        width: '100%',
+                        px: 1,
+                        py: 0,
+                    }}
+                >
+                    <TextField
+                        label="Find objects"
+                        placeholder="Catalog, schema or table name..."
+                        size="small"
+                        variant="outlined"
+                        type="search"
+                        sx={{
+                            flex: 1,
+                            mr: 0,
+                            '& .MuiInputBase-input': { fontSize: '0.6rem' },
+                            '& .MuiInputBase-input::placeholder': { fontSize: '0.6rem' },
+                            '& .MuiInputLabel-root': { fontSize: '0.6rem' },
+                        }}
                         value={filterText}
                         onChange={(e) => setFilterText(e.target.value)}
-                        className="filter-input"
+                        fullWidth
                     />
-                    {filterText && (
-                        <div
-                            className="clear-search"
-                            onClick={() => setFilterText('')}
-                            role="button"
-                            aria-label="Clear search"
-                        >
-                            <img src={CloseIcon} alt="Clear" width="12" height="12" />
-                        </div>
-                    )}
-                </div>
-
-                <button className="reload-button" title="Reload Catalogs" onClick={loadCatalogs} disabled={isLoading}>
-                    &#x27F3;
-                </button>
-                <label
-                    className="search-columns-toggle"
-                    title="Enabling will fetch table columns for search which may take additional time."
+                    <IconButton title="Refresh" size="small" onClick={loadCatalogs} disabled={isLoading}>
+                        <RefreshIcon sx={{ fontSize: '1.2rem' }} />
+                    </IconButton>
+                    <IconButton title="Close drawer" size="small" onClick={onDrawerToggle}>
+                        <ChevronLeftIcon sx={{ fontSize: '1.2rem' }} />
+                    </IconButton>
+                </Box>
+                {enableSearchColumns && (
+                    <Box
+                        sx={{
+                            '& .MuiInputBase-input': { fontSize: '0.6rem' },
+                            '& .MuiInputBase-input::placeholder': { fontSize: '0.6rem' },
+                            '& .MuiInputLabel-root': { fontSize: '0.6rem' },
+                            width: '100%',
+                            px: 1,
+                        }}
+                    >
+                        <FormControlLabel
+                            title="Enabling will fetch table columns for search which may take additional time."
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    sx={{ py: 0, '& .MuiSvgIcon-root': { fontSize: 'inherit' } }}
+                                    checked={searchColumns}
+                                    onChange={(e) => setSearchColumns(e.target.checked)}
+                                />
+                            }
+                            label={
+                                <Grid container alignItems="center" columnGap={1}>
+                                    <Typography
+                                        sx={{
+                                            px: 0.1,
+                                            pt: 0.1,
+                                            fontSize: '0.5rem',
+                                        }}
+                                    >
+                                        Search columns
+                                    </Typography>
+                                    {isLoadingColumns && <CircularProgress size={22} />}
+                                </Grid>
+                            }
+                        />
+                    </Box>
+                )}
+            </Box>
+            <Divider />
+            <LinearProgress color="info" sx={{ visibility: isLoading ? 'visible' : 'hidden' }} />
+            {errorMessage && (
+                <Alert severity="error">
+                    <AlertTitle>Catalog Viewer</AlertTitle>
+                    {errorMessage}
+                </Alert>
+            )}
+            <Box
+                sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    minHeight: 0,
+                }}
+            >
+                <SimpleTreeView
+                    sx={{
+                        '& .MuiTreeItem-content': {
+                            minHeight: 24,
+                            py: 0.2,
+                            my: 0,
+                            gap: 0.5,
+                        },
+                    }}
+                    onItemExpansionToggle={(_, itemId) => {
+                        handleToggle(itemId)
+                    }}
                 >
-                    <input
-                        type="checkbox"
-                        checked={searchColumns}
-                        onChange={(e) => setSearchColumns(e.target.checked)}
-                    />
-                    Search Columns
-                    {isLoadingColumns && <Loader2 size={12} className="ml-4 animate-spin" />}
-                </label>
-            </div>
+                    {Array.from(catalogs.values())
+                        .sort((a, b) => a.getName().localeCompare(b.getName()))
+                        .map((catalog: Catalog) => {
+                            const catalogName = catalog.getName()
+                            const catalogPath = buildPath.catalog(catalogName)
 
-            {isLoading && <div className="loading-indicator">Loading catalogs...</div>}
+                            if (filterText && !isVisible(catalogPath)) {
+                                return null
+                            }
 
-            {errorMessage && <ErrorBox errorMessage={errorMessage} errorContext="Catalog Viewer" />}
+                            return (
+                                <TreeItem
+                                    key={catalogPath}
+                                    itemId={catalogPath}
+                                    slots={{
+                                        icon: StorageOutlinedIcon,
+                                    }}
+                                    label={
+                                        <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <Typography fontSize="small">{catalogName}</Typography>
+                                            {catalog.getType() === 'system' && (
+                                                <Chip size="small" label="system catalog" />
+                                            )}
 
-            <div className="catalogs-container">
-                {Array.from(catalogs.values())
-                    .sort((a, b) => a.getName().localeCompare(b.getName()))
-                    .map((catalog: Catalog) => {
-                        const catalogName = catalog.getName()
-                        const catalogPath = buildPath.catalog(catalogName)
-
-                        if (filterText && !isVisible(catalogPath)) {
-                            return null
-                        }
-
-                        return (
-                            <div key={catalogName} className="catalog-section">
-                                <div className="viewer_catalog" onClick={() => handleToggle(catalogPath)}>
-                                    <div className="catalog-content">
-                                        <span className="catalog-name">{catalogName}</span>
-                                        <span className="helper-text">{catalog.getType()} catalog</span>
-                                    </div>
-                                    <span
-                                        className={`expand-indicator ${!isExpanded(catalogPath) && hasMatchingChildren(catalogPath) ? 'expand-indicator-has-matches' : ''}`}
-                                    >
-                                        {isExpanded(catalogPath) ? '▼' : '▶'}
-                                    </span>
-                                    <div
-                                        className="generate-query-button"
-                                        onClick={(e) => handleGenerateCatalogQuery(e, catalogName)}
-                                        title="Set this catalog as default catalog"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </div>
-                                </div>
-
-                                {isExpanded(catalogPath) && (
-                                    <div className="viewer_catalog_body">
+                                            <IconButton
+                                                title="Set this catalog as default catalog"
+                                                size="small"
+                                                sx={{ ml: 'auto' }}
+                                                onClick={(e) => handleGenerateCatalogQuery(e, catalogName)}
+                                                disabled={isLoading}
+                                            >
+                                                <ChevronRightIcon sx={{ fontSize: 14 }} />
+                                            </IconButton>
+                                        </Box>
+                                    }
+                                    slotProps={{
+                                        label: {
+                                            style: {
+                                                overflow: 'visible',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <Box>
                                         {catalog.getError() && (
-                                            <ErrorBox errorMessage={catalog.getError()} errorContext="Catalog Viewer" />
+                                            <Alert severity="error">
+                                                <AlertTitle>Catalog Viewer</AlertTitle>
+                                                {catalog.getError()}
+                                            </Alert>
                                         )}
 
                                         {Array.from(catalog.getSchemas().values())
                                             .sort((a, b) => a.getName().localeCompare(b.getName()))
                                             .map((schema) => {
-                                                const schemaPath = buildPath.schema(catalogName, schema.getName())
+                                                const schemaName = schema.getName()
+                                                const schemaPath = buildPath.schema(catalogName, schemaName)
 
                                                 return (
                                                     <CatalogViewerSchema
@@ -245,21 +362,20 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({ initialFilterText = '', o
                                                         catalogName={catalogName}
                                                         schema={schema}
                                                         filterText={filterText}
-                                                        isExpanded={isExpanded(schemaPath)}
                                                         isVisible={isVisible}
+                                                        isLoading={isLoading}
                                                         hasMatchingChildren={hasMatchingChildren}
-                                                        onToggle={handleToggle}
                                                         onGenerateQuery={handleGenerateQuery}
                                                     />
                                                 )
                                             })}
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })}
-            </div>
-        </div>
+                                    </Box>
+                                </TreeItem>
+                            )
+                        })}
+                </SimpleTreeView>
+            </Box>
+        </Box>
     )
 }
 
