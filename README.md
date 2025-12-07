@@ -18,7 +18,7 @@ requests to a local or remote Trino cluster.
 Implementation details:
 
 * React TypeScript project with Vite
-* Uses Node.js v20+
+* Uses Node.js v24+
 * Monaco editor + ANTLR parser using the Trino language
 
 ## Features
