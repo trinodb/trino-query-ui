@@ -4,11 +4,10 @@ import CodeIcon from '@mui/icons-material/Code'
 import Maximize from '@mui/icons-material/Maximize'
 import Minimize from '@mui/icons-material/Minimize'
 import Editor from '@monaco-editor/react'
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
+import * as monaco from 'monaco-editor'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import EnterpriseTabs from './controls/tabs/EnterpriseTabs'
-import * as editor_api from 'monaco-editor/esm/vs/editor/editor.api'
 import * as c3 from 'antlr4-c3'
 import { CharStream, CommonTokenStream, TerminalNode, ParseTree, ParserRuleContext } from 'antlr4ng'
 import { TableNameContext } from './generated/lexer/SqlBase.g4/SqlBaseParser'
@@ -51,27 +50,27 @@ interface QueryEditorPaneState {
 // create a private class that extends CompletionItem
 // this class will be used to create the completion items
 // for the monaco editor
-class CompletionItemImpl implements editor_api.languages.CompletionItem {
+class CompletionItemImpl implements monaco.languages.CompletionItem {
     label: string
-    kind: editor_api.languages.CompletionItemKind
-    tags?: readonly editor_api.languages.CompletionItemTag[] | undefined
+    kind: monaco.languages.CompletionItemKind
+    tags?: readonly monaco.languages.CompletionItemTag[] | undefined
     detail?: string | undefined
     sortText?: string | undefined
     filterText?: string | undefined
     preselect?: boolean | undefined
     insertText: string
-    insertTextRules?: editor_api.languages.CompletionItemInsertTextRule | undefined
-    range: editor_api.IRange | editor_api.languages.CompletionItemRanges
+    insertTextRules?: monaco.languages.CompletionItemInsertTextRule | undefined
+    range: monaco.IRange | monaco.languages.CompletionItemRanges
     commitCharacters?: string[] | undefined
-    additionalTextEdits?: editor_api.editor.ISingleEditOperation[] | undefined
-    command?: editor_api.languages.Command | undefined
+    additionalTextEdits?: monaco.editor.ISingleEditOperation[] | undefined
+    command?: monaco.languages.Command | undefined
 
     constructor(
         label: string,
-        kind: editor_api.languages.CompletionItemKind,
+        kind: monaco.languages.CompletionItemKind,
         insertText: string,
-        insertTextRules: editor_api.languages.CompletionItemInsertTextRule,
-        range: editor_api.IRange | editor_api.languages.CompletionItemRanges
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule,
+        range: monaco.IRange | monaco.languages.CompletionItemRanges
     ) {
         this.label = label
         this.kind = kind
@@ -240,7 +239,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     parseAndDecoratePromise(monaco: any, editor: any, lastUpdateCounter: number): boolean {
         const newValue: string = editor.getValue()
         const lines: string[] = newValue.split('\n')
-        const caretPosition: editor_api.Position = editor.getPosition()
+        const caretPosition: monaco.Position = editor.getPosition()
 
         // Gather information about the cursor position
         let currentWord = ''
@@ -397,15 +396,15 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     createCompletionItem(
         match: string,
         replace: string,
-        caretPosition: editor_api.Position,
+        caretPosition: monaco.Position,
         startWordColumn: number,
         endWordColumn: number
     ) {
         return {
             label: match,
-            kind: editor_api.languages.CompletionItemKind.Keyword,
+            kind: monaco.languages.CompletionItemKind.Keyword,
             insertText: replace,
-            insertTextRules: editor_api.languages.CompletionItemInsertTextRule.None,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.None,
             // Use Monaco's preferred format for ranges
             range: {
                 startLineNumber: caretPosition.lineNumber,
@@ -421,7 +420,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         parser: SqlBaseParser,
         startWordColumn: number,
         endWord: number,
-        caretPosition: editor_api.Position,
+        caretPosition: monaco.Position,
         monaco: any,
         editor: any,
         core: any,
@@ -503,7 +502,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 completionItems.push(
                     new CompletionItemImpl(
                         tableName,
-                        editor_api.languages.CompletionItemKind.Reference,
+                        monaco.languages.CompletionItemKind.Reference,
                         tableName,
                         monaco.languages.CompletionItemInsertTextRule.None,
                         {
@@ -521,7 +520,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 completionItems.push(
                     new CompletionItemImpl(
                         key,
-                        editor_api.languages.CompletionItemKind.Reference,
+                        monaco.languages.CompletionItemKind.Reference,
                         key,
                         monaco.languages.CompletionItemInsertTextRule.None,
                         {
@@ -566,7 +565,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             completionItems.push(
                                 new CompletionItemImpl(
                                     column.getName(),
-                                    editor_api.languages.CompletionItemKind.Field,
+                                    monaco.languages.CompletionItemKind.Field,
                                     column.getName(),
                                     monaco.languages.CompletionItemInsertTextRule.None,
                                     {
@@ -597,7 +596,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                         completionItems.push(
                             new CompletionItemImpl(
                                 singleListOfColumnsJoinedByCommas,
-                                editor_api.languages.CompletionItemKind.Field,
+                                monaco.languages.CompletionItemKind.Field,
                                 singleListOfColumnsJoinedByCommas + ' ',
                                 monaco.languages.CompletionItemInsertTextRule.None,
                                 {
