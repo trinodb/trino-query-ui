@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
+import * as monaco from 'monaco-editor'
 import NamedQuery from './NamedQuery'
 import SchemaProvider from './SchemaProvider'
 import TableReference from '../schema/TableReference'
