@@ -70,7 +70,7 @@
     "vite": "^7.1.7"
   },
   "peerDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react": "^19.1.4",
+    "react-dom": "^19.1.4"
   }
 }
