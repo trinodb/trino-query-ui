@@ -1,33 +1,45 @@
-name: Publish Package to npmjs
+name: Release and Publish
 
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
-  publish:
+  release-and-publish:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: precise
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
         with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm ci
+      - id: version
+        uses: EndBug/version-check@v2
 
-      - name: Build package
-        run: npm run build
+      - if: steps.version.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          generate_release_notes: true
 
-      - name: Publish to npm
-        run: npm publish
+      - if: steps.version.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - if: steps.version.outputs.changed == 'true'
+        run: |
+          npm ci
+          npm run build
+          npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
