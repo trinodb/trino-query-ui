@@ -23,6 +23,9 @@ jobs:
 
       - id: version
         uses: EndBug/version-check@v2
+        with:
+          file-name: ./precise/package.json
+          diff-search: true
 
       - if: steps.version.outputs.changed == 'true'
         uses: softprops/action-gh-release@v2
