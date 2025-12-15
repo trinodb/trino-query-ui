@@ -16,7 +16,8 @@ jobs:
         working-directory: precise
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repo
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
