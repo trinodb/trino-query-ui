@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 permissions:
   contents: write
@@ -40,10 +41,10 @@ jobs:
           node-version: '24' # Use latest LTS version
           registry-url: https://registry.npmjs.org
 
-      - if: steps.version.outputs.changed == 'true'
-        run: |
+#- if: steps.version.outputs.changed == 'true'
+      - run: |
           npm ci
           npm run build
-          npm publish
+          npm whoami
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
