@@ -1,7 +1,7 @@
 {
   "name": "trino-query-ui",
   "description": "Trino Query Editor react component",
-  "version": "0.1.2",
+  "version": "0.123123123.0",
   "author": {
     "name": "Trino contributors",
     "email": "general@trino.io",
