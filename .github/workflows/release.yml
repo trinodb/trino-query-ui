@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - id: version
-        uses: EndBug/version-check@v2
+        uses: EndBug/version-check@v3
         with:
           file-name: ./precise/package.json
           diff-search: true
