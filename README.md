@@ -41,7 +41,7 @@ See details in the [demo animation](./demos.gif).
 ## Installation
 
 ```shell
-npm install trino-query-ui
+npm install @trinodb/trino-query-ui
 ```
 
 ## Quick start

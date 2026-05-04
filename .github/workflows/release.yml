@@ -6,6 +6,7 @@ on:
       - main
 
 permissions:
+  id-token: write  # Required for OIDC/Trusted Publishing
   contents: write
 
 jobs:
@@ -39,11 +40,9 @@ jobs:
         with:
           node-version: '24' # Use latest LTS version
           registry-url: https://registry.npmjs.org
-
+          scope: '@trinodb'
       - if: steps.version.outputs.changed == 'true'
         run: |
           npm ci
           npm run build
-          npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public
