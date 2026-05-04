@@ -1,11 +1,14 @@
 {
-  "name": "trino-query-ui",
+  "name": "@trinodb/trino-query-ui",
   "description": "Trino Query Editor react component",
   "version": "0.1.2",
   "author": {
     "name": "Trino contributors",
     "email": "general@trino.io",
     "url": "https://github.com/trinodb/trino-query-ui/graphs/contributors"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "trino",
