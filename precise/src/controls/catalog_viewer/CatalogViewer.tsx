@@ -31,6 +31,7 @@ interface CatalogViewerProps {
     onAppendQuery?: (query: string, catalog?: string, schema?: string) => void
     onDrawerToggle?: () => void
     enableSearchColumns?: boolean
+    requestHeaders?: Record<string, string>
 }
 
 const CatalogViewer: React.FC<CatalogViewerProps> = ({
@@ -39,6 +40,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     onAppendQuery,
     onDrawerToggle,
     enableSearchColumns,
+    requestHeaders,
 }) => {
     // Basic state
     const [catalogs, setCatalogs] = useState<Map<string, Catalog>>(new Map())
@@ -89,6 +91,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     }, [debouncedFilterText, searchColumns, catalogs])
 
     const loadCatalogs = useCallback(async () => {
+        SchemaProvider.setRequestHeaders(requestHeaders ?? {})
         setIsLoading(true)
         setErrorMessage(undefined)
 
@@ -107,7 +110,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
             setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred')
             setIsLoading(false)
         }
-    }, [])
+    }, [requestHeaders])
 
     const handleToggle = async (path: string) => {
         if (!viewerState.current) return
