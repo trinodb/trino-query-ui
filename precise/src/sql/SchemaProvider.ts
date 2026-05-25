@@ -13,6 +13,17 @@ class SchemaProvider {
     // map of fully qualified table name to tables
     static tables: Map<string, Table> = new Map<string, Table>()
 
+    // Configurable request headers for authentication
+    private static requestHeaders: Record<string, string> = {}
+
+    static setRequestHeaders(headers: Record<string, string>) {
+        this.requestHeaders = { ...headers }
+    }
+
+    private static createRunner(): TrinoQueryRunner {
+        return new TrinoQueryRunner().SetRequestHeaders(this.requestHeaders)
+    }
+
     static getTableNameList(catalogFilter: string | undefined, schemaFilter: string | undefined): string[] {
         // get list from catalogs, because tables may not be resolved
         const tableNames: string[] = []
@@ -68,7 +79,7 @@ class SchemaProvider {
         errorCallback: ((error: string) => void) | null = null
     ) {
         // refresh catalogs
-        new TrinoQueryRunner()
+        this.createRunner()
             .SetAllResultsCallback((results: any[], isError: boolean) => {
                 for (let i = 0; i < results.length; i++) {
                     const catalog: Catalog = new Catalog(results[i][0], results[i][1])
@@ -78,7 +89,7 @@ class SchemaProvider {
                     this.lastSchemaFetchError = undefined
 
                     // refresh tables and schemas for this catalog
-                    new TrinoQueryRunner()
+                    this.createRunner()
                         .SetAllResultsCallback((results: any[], isError: boolean) => {
                             for (let i = 0; i < results.length; i++) {
                                 const schemaName = results[i][0]
@@ -121,7 +132,7 @@ class SchemaProvider {
     /* callback returns a table type */
     static async getTableRefreshCache(tableRef: TableReference, callback: (table: Table) => void) {
         // First try to load all tables in the schema at once
-        const query = new TrinoQueryRunner()
+        const query = this.createRunner()
         query
             .SetAllResultsCallback((results: any[]) => {
                 // Create a temporary map to hold all tables in this schema
@@ -186,7 +197,7 @@ class SchemaProvider {
     }
 
     private static fallbackToDescribe(tableRef: TableReference, callback: (table: Table) => void) {
-        const fallbackQuery = new TrinoQueryRunner()
+        const fallbackQuery = this.createRunner()
         fallbackQuery
             .SetAllResultsCallback((results: any[]) => {
                 const table = new Table(tableRef.tableName)

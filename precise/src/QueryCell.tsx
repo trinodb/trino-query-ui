@@ -34,6 +34,7 @@ interface QueryCellProps {
     height: number
     onDrawerToggle: () => void
     theme?: string
+    requestHeaders?: Record<string, string>
 }
 
 class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
@@ -70,6 +71,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         return (
             this.props.drawerOpen !== nextProps.drawerOpen ||
             this.props.height !== nextProps.height ||
+            this.props.requestHeaders !== nextProps.requestHeaders ||
             this.state.results !== nextState.results ||
             this.state.columns !== nextState.columns ||
             this.state.response !== nextState.response ||
@@ -82,6 +84,12 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             this.state.editingSchema !== nextState.editingSchema ||
             this.state.editorCollapsed !== nextState.editorCollapsed
         )
+    }
+
+    componentDidUpdate(prevProps: QueryCellProps) {
+        if (prevProps.requestHeaders !== this.props.requestHeaders && this.props.requestHeaders) {
+            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
+        }
     }
 
     handleQueriesChange = () => {
@@ -119,6 +127,10 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 schema: schema ?? undefined,
             })
         })
+
+        if (this.props.requestHeaders) {
+            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
+        }
     }
 
     setRunningQueryId = (queryId: string | null) => {
