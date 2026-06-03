@@ -10,12 +10,14 @@ import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import CatalogViewer from './controls/catalog_viewer/CatalogViewer'
 import SchemaProvider from './sql/SchemaProvider'
+import { ResultSetStore } from './utils/resultSetStore'
 
 interface IQueryEditor {
     height: number
     theme?: 'dark' | 'light'
     enableCatalogSearchColumns?: boolean
     requestHeaders?: Record<string, string>
+    resultSetStore?: ResultSetStore
 }
 
 const DRAWER_WIDTH = 260
@@ -73,7 +75,13 @@ const AppBar = styled(MuiAppBar, {
     ],
 }))
 
-export const QueryEditor = ({ height, theme, enableCatalogSearchColumns, requestHeaders }: IQueryEditor) => {
+export const QueryEditor = ({
+    height,
+    theme,
+    enableCatalogSearchColumns,
+    requestHeaders,
+    resultSetStore,
+}: IQueryEditor) => {
     const [queries, setQueries] = useState<Queries>(() => new Queries())
     const [drawerOpen, setDrawerOpen] = useState<boolean>(true)
     const [queryRunning, setQueryRunning] = useState<boolean>(false)
@@ -207,6 +215,7 @@ export const QueryEditor = ({ height, theme, enableCatalogSearchColumns, request
                         onDrawerToggle={() => setDrawerOpen(true)}
                         theme={theme}
                         requestHeaders={requestHeaders}
+                        resultSetStore={resultSetStore}
                     />
                 </Main>
             </Box>

@@ -3,7 +3,7 @@ class TrinoQueryRunner {
     private state: any = {}
     private query: string = ''
     private rowsRead: number = 0
-    isRunning: boolean = false
+    private isRunning: boolean = false
     private cancellationToken: string | null = null
     SetResults = (newResults: any[]) => void {}
     // make this return the TrinoQueryRunner object
@@ -29,6 +29,14 @@ class TrinoQueryRunner {
     // Authentication: custom headers to include in every Trino request (e.g. Authorization, X-Trino-User)
     private requestHeaders: Record<string, string> = {}
 
+    // Hard cap for the cached result set. If the next chunk exceeds this, stop.
+    private static readonly MAX_RESULT_SET_BYTES = 5 * 1024 * 1024
+    private resultSetBytes = 0
+
+    // Hard cap for the number of rows in the cached result set.
+    private static readonly MAX_ROWS = 10_000
+
+    private setTruncationMessage = (_msg: string) => {}
     SetAllResultsCallback(setAllResults: (n: any[], error: boolean) => any): TrinoQueryRunner {
         this.setAllResults = setAllResults
         return this
@@ -50,6 +58,11 @@ class TrinoQueryRunner {
         return this
     }
 
+    SetTruncationMessageCallback(callback: (msg: string) => void): TrinoQueryRunner {
+        this.setTruncationMessage = callback
+        return this
+    }
+
     // Set custom headers to include in every Trino request (e.g. Authorization, X-Trino-User)
     SetRequestHeaders(headers: Record<string, string>): TrinoQueryRunner {
         this.requestHeaders = headers
@@ -58,12 +71,9 @@ class TrinoQueryRunner {
 
     // Resolve headers; falls back to X-Trino-User: system if none provided
     private resolveHeaders(): Record<string, string> {
-        return Object.keys(this.requestHeaders).length > 0
-            ? { ...this.requestHeaders }
-            : { 'X-Trino-User': 'system' }
+        return Object.keys(this.requestHeaders).length > 0 ? { ...this.requestHeaders } : { 'X-Trino-User': 'system' }
     }
 
-    // Add getters for catalog and schema
     GetCatalog(): string | null {
         return this.trinoCatalog
     }
@@ -77,46 +87,66 @@ class TrinoQueryRunner {
     }
 
     UpdateStatus(state: any) {
-        // If cancelled, handle here because we need state in order to cancel
-        if (this.cancellationToken) {
-            state.stats.state = 'CANCELLING'
-            this.state = state
-            this.setStatus(state)
-            const nextUri = state.nextUri.replace(/^https?:\/\/[^/]+/, '')
+        this.state = state
+        this.setStatus(state)
 
-            // cancel query
-            fetch(nextUri, {
-                method: 'DELETE',
-                headers: this.resolveHeaders(),
-            })
-                .then((response) => response)
-                .then((data) => {
-                    state.stats.state = 'CANCELLED'
-                    this.state = state
-                    this.setStatus(state)
-                    this.cancellationToken = null
-                    this.setErrorMessage(this.cancellationReason ? this.cancellationReason : 'Query was cancelled')
-                    this.HandleStopped()
-                })
-                .catch((error) => {
-                    console.error('Error:', error)
-                    this.setErrorMessage(error.toString())
-                    this.HandleStopped()
-                })
+        if (state?.error) {
+            this.setErrorMessage(state.error.message)
+        }
+
+        if (!this.cancellationToken) {
             return
         }
 
-        this.state = state
-        this.setStatus(state)
-        if (state.error) {
-            this.setErrorMessage(state.error.message)
+        const nextUri = state?.nextUri
+        if (!nextUri) {
+            return
         }
+
+        const cancelState = {
+            ...state,
+            stats: {
+                ...state.stats,
+                state: 'CANCELLING',
+            },
+        }
+
+        this.state = cancelState
+        this.setStatus(cancelState)
+
+        const cancelPath = nextUri.replace(/^https?:\/\/[^/]+/, '')
+
+        fetch(cancelPath, {
+            method: 'DELETE',
+            headers: this.resolveHeaders(),
+        })
+            .then(() => {
+                const cancelledState = {
+                    ...cancelState,
+                    stats: {
+                        ...cancelState.stats,
+                        state: 'CANCELLED',
+                    },
+                }
+
+                this.state = cancelledState
+                this.setStatus(cancelledState)
+                this.cancellationToken = null
+                this.setErrorMessage(this.cancellationReason || 'Query was cancelled')
+                this.HandleStopped()
+            })
+            .catch((error) => {
+                console.error('Error:', error)
+                this.setErrorMessage(error.toString())
+                this.HandleStopped()
+            })
     }
 
     ClearState() {
         this.pages = []
         this.columns = []
         this.rowsRead = 0
+        this.resultSetBytes = 0
     }
 
     HandleStopped() {
@@ -164,7 +194,6 @@ class TrinoQueryRunner {
         this.isRunning = true
         this.SetStarted()
         this.query = statement
-        console.log('Starting query: ' + statement)
         this.rowsRead = 0
         this.ClearState()
 
@@ -182,24 +211,40 @@ class TrinoQueryRunner {
 
         fetch('/v1/statement', {
             method: 'POST',
-            headers: headers,
+            headers,
             body: statement,
             signal: controller.signal,
         })
             .then((response) => {
+                clearTimeout(timeoutId)
+
                 if (!response.ok) {
-                    throw new Error(response.statusText + ' (' + response.status + ')')
+                    throw new Error(`${response.statusText} (${response.status})`)
                 }
 
-                // Extract headers before parsing the JSON response
                 this.extractHeaders(response.headers)
-
                 return response.json()
             })
             .then((data) => {
-                this.HandleResults(data)
+                const shouldContinue = this.HandleResults(data)
                 this.UpdateStatus(data)
-                this.NextPage(data)
+
+                if (!shouldContinue) {
+                    return
+                }
+
+                if (data.nextUri) {
+                    if (this.cancellationToken) {
+                        return
+                    }
+
+                    this.backoff_delay_msec = Math.min(this.backoff_delay_msec + 20, 1000)
+                    setTimeout(() => this.NextPage(data), this.backoff_delay_msec)
+                } else {
+                    this.HandleSetAllResults(data?.stats?.state === 'FAILED')
+                    this.HandleStopped()
+                    console.log('Query finished')
+                }
             })
             .catch((error) => {
                 clearTimeout(timeoutId)
@@ -227,36 +272,23 @@ class TrinoQueryRunner {
         return this
     }
 
-    // Extract and store Trino headers
     private extractHeaders(headers: Headers) {
-        const headerEntries: [string, string][] = []
+        const headerMap = new Map<string, string>()
 
-        // Iterate through all headers and log them
         headers.forEach((value, key) => {
-            headerEntries.push([key.toLowerCase(), value])
+            headerMap.set(key.toLowerCase(), value)
         })
 
-        // Create a map of lowercase header names for case-insensitive lookup
-        const headerMap = new Map(headerEntries)
-
-        // Get SET catalog and schema headers if present (case-insensitive)
         const setCatalog = headerMap.get('x-trino-set-catalog')
         const setSchema = headerMap.get('x-trino-set-schema')
 
-        console.log(`Found SET headers - Catalog: ${setCatalog}, Schema: ${setSchema}`)
-
-        // Update our stored values when SET headers are present
         if (setCatalog) {
             this.trinoCatalog = setCatalog
-            console.log(`Updated catalog to: ${this.trinoCatalog}`)
         }
-
         if (setSchema) {
             this.trinoSchema = setSchema
-            console.log(`Updated schema to: ${this.trinoSchema}`)
         }
 
-        // Call the callback with the extracted headers
         if ((setCatalog || setSchema) && this.setHeadersCallback) {
             this.setHeadersCallback(this.trinoCatalog, this.trinoSchema)
         }
@@ -264,7 +296,12 @@ class TrinoQueryRunner {
 
     async NextPage(previous: any) {
         try {
-            // fix cors for testing
+            if (!previous?.nextUri) {
+                this.HandleSetAllResults(previous?.stats?.state === 'FAILED')
+                this.HandleStopped()
+                return
+            }
+
             const nextUri = previous.nextUri.replace(/^https?:\/\/[^/]+/, '')
             const response = await fetch(nextUri, {
                 method: 'GET',
@@ -275,13 +312,15 @@ class TrinoQueryRunner {
                 throw new Error(response.statusText)
             }
 
-            // Extract headers from each page response
             this.extractHeaders(response.headers)
-
             const data = await response.json()
 
-            this.HandleResults(data)
+            const shouldContinue = this.HandleResults(data)
             this.UpdateStatus(data)
+
+            if (!shouldContinue) {
+                return
+            }
 
             if (data.nextUri) {
                 // We want to cancel just after the status is updated, otherwise if the queue is QUEUED we will not be able to cancel
@@ -293,7 +332,7 @@ class TrinoQueryRunner {
                 this.backoff_delay_msec = Math.min(this.backoff_delay_msec + 20, 1000)
                 setTimeout(() => this.NextPage(data), this.backoff_delay_msec)
             } else {
-                this.HandleSetAllResults(data['stats']['state'] == 'FAILED')
+                this.HandleSetAllResults(data?.stats?.state === 'FAILED')
                 this.HandleStopped()
                 console.log('Query finished')
             }
@@ -322,29 +361,41 @@ class TrinoQueryRunner {
             this.SetColumns(data.columns)
         }
 
-        const maxRows = 10000
-
-        if (data.data) {
-            if (data.data.length + this.rowsRead > maxRows) {
-                // modify this page so we hit maxRows rows exactly
-                const trim = maxRows - this.rowsRead
-                this.rowsRead += trim
-                const page: any[] = data.data.slice(0, trim)
-                this.pages.push(page)
-
-                // set error indicating rows were trimmed formatted using maxRows with commas
-                this.setErrorMessage('Results were trimmed to ' + maxRows.toLocaleString() + ' rows')
-                this.SetResults(this.pages)
-                // cancel
-                this.CancelQuery('Results were trimmed to ' + maxRows.toLocaleString() + ' rows')
-                return false
-            } else {
-                this.pages.push(data.data)
-                this.rowsRead += data.data.length
-            }
-
-            this.SetResults(this.pages)
+        if (!data.data || !Array.isArray(data.data)) {
+            return true
         }
+
+        // Check row limit first — trim the page if it would push us over.
+        if (this.rowsRead + data.data.length > TrinoQueryRunner.MAX_ROWS) {
+            const remaining = TrinoQueryRunner.MAX_ROWS - this.rowsRead
+            const trimmed = data.data.slice(0, remaining)
+            if (trimmed.length > 0) {
+                this.pages.push(trimmed)
+                this.rowsRead += trimmed.length
+                this.resultSetBytes += new TextEncoder().encode(JSON.stringify(trimmed)).length
+                this.SetResults([...this.pages])
+            }
+            this.setTruncationMessage(
+                `Showing first ${TrinoQueryRunner.MAX_ROWS.toLocaleString()} rows (result may be incomplete)`
+            )
+            this.CancelQuery('Row limit reached')
+            return false
+        }
+
+        const pageBytes = new TextEncoder().encode(JSON.stringify(data.data)).length
+        if (this.resultSetBytes + pageBytes > TrinoQueryRunner.MAX_RESULT_SET_BYTES) {
+            this.setTruncationMessage(
+                `Showing first ${this.rowsRead.toLocaleString()} rows (${Math.floor(TrinoQueryRunner.MAX_RESULT_SET_BYTES / 1024 / 1024)} MB size limit reached — result may be incomplete)`
+            )
+            this.CancelQuery('Result set exceeded local cache limit')
+            return false
+        }
+
+        this.pages.push(data.data)
+        this.rowsRead += data.data.length
+        this.resultSetBytes += pageBytes
+        this.SetResults([...this.pages])
+
         return true
     }
 }

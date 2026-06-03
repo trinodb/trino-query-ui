@@ -30,6 +30,7 @@ interface ResultSetProps {
     response: any
     height: number
     errorMessage: string
+    truncationMessage?: string
     onClearResults: (queryId: string | undefined) => void
 }
 
@@ -109,27 +110,57 @@ class ResultSet extends React.Component<ResultSetProps> {
         )
     }
 
+    private cachedResults: any[] | null = null
+    private cachedColumns: any[] | null = null
+    private cachedMuiRows: any[] = []
+    private cachedMuiColumns: GridColDef[] = []
+
+    private getMuiColumns(columns: any[]): GridColDef[] {
+        if (columns !== this.cachedColumns) {
+            this.cachedColumns = columns
+            this.cachedMuiColumns = columns.map((column: any) => ({ field: column.name, minWidth: 150 }))
+        }
+        return this.cachedMuiColumns
+    }
+
+    private getMuiRows(results: any[], columns: any[]): any[] {
+        if (results !== this.cachedResults || columns !== this.cachedColumns) {
+            this.cachedResults = results
+            this.cachedMuiRows = results
+                .flat()
+                .map((row: any[], i: number) =>
+                    Object.fromEntries([
+                        ['mui-row-id', `row-${i + 1}`],
+                        ...columns.map((c: any, j: number) => [c.name, row[j]]),
+                    ])
+                )
+        }
+        return this.cachedMuiRows
+    }
+
     renderTable = (results: any[], columns: any) => {
-        const muiColumns: GridColDef[] = columns.map((column: any) => ({ field: column.name, minWidth: 150 }))
-        const muiRows = results
-            .flat()
-            .map((row: any[], i: number) =>
-                Object.fromEntries([
-                    ['mui-row-id', `row-${i + 1}`],
-                    ...columns.map((c: any, j: number) => [c.name, row[j]]),
-                ])
-            )
+        const muiColumns = this.getMuiColumns(columns)
+        const muiRows = this.getMuiRows(results, columns)
 
         return (
-            <DataGrid
-                rows={muiRows}
-                columns={muiColumns}
-                sx={{
-                    '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
-                }}
-                getRowId={(row) => String(row['mui-row-id'])}
-                density="compact"
-            />
+            <Box sx={{ position: 'absolute', inset: 0 }}>
+                <DataGrid
+                    rows={muiRows}
+                    columns={muiColumns}
+                    pagination
+                    pageSizeOptions={[25, 50, 100]}
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 100, page: 0 } },
+                    }}
+                    sx={{
+                        width: '100%',
+                        height: '100%',
+                        '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
+                    }}
+                    getRowId={(row) => String(row['mui-row-id'])}
+                    density="compact"
+                />
+            </Box>
         )
     }
 
@@ -312,7 +343,7 @@ class ResultSet extends React.Component<ResultSetProps> {
     }
 
     render() {
-        const { queryId, results, columns, response, height, errorMessage } = this.props
+        const { queryId, results, columns, response, height, errorMessage, truncationMessage } = this.props
 
         // if the query ID has changed, reset the last processed rows and elapsed time
         if (this.lastQueryId !== queryId) {
@@ -375,6 +406,11 @@ class ResultSet extends React.Component<ResultSetProps> {
                         {errorMessage ? (
                             <Alert severity="error" sx={{ py: 0 }}>
                                 {errorMessage}
+                            </Alert>
+                        ) : null}
+                        {truncationMessage ? (
+                            <Alert severity="warning" sx={{ py: 0 }}>
+                                {truncationMessage}
                             </Alert>
                         ) : null}
                         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.8rem' }}>
@@ -642,15 +678,7 @@ class ResultSet extends React.Component<ResultSetProps> {
                         </Box>
                     </>
                 ) : columns && columns.length ? (
-                    <Box
-                        sx={{
-                            // decrease the resultset size by the header size
-                            height: height - 42,
-                            overflowY: 'auto',
-                        }}
-                    >
-                        {this.renderTable(results, columns)}
-                    </Box>
+                    <Box sx={{ position: 'relative', height: height - 42 }}>{this.renderTable(results, columns)}</Box>
                 ) : null}
             </Box>
         )
