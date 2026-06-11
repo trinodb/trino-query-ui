@@ -21,6 +21,10 @@ interface EnterpriseTabsProps<T extends TabInfo> {
 interface EnterpriseTabsState<T extends TabInfo> {
     tabs: T[]
     currentTabId: string
+    draggedIndex: number | null
+    dragOverIndex: number | null
+    editingTabId: string | null
+    editValue: string
 }
 
 class EnterpriseTabs<T extends TabInfo> extends Component<EnterpriseTabsProps<T>, EnterpriseTabsState<T>> {
@@ -31,6 +35,10 @@ class EnterpriseTabs<T extends TabInfo> extends Component<EnterpriseTabsProps<T>
         this.state = {
             tabs: props.tabs.getTabs(),
             currentTabId: props.tabs.getCurrentTab().id,
+            draggedIndex: null,
+            dragOverIndex: null,
+            editingTabId: null,
+            editValue: '',
         }
     }
 
@@ -117,11 +125,65 @@ class EnterpriseTabs<T extends TabInfo> extends Component<EnterpriseTabsProps<T>
     moveTab = (fromIndex: number, toIndex: number) => {
         const tabs = [...this.state.tabs]
         const [movedTab] = tabs.splice(fromIndex, 1)
-        tabs.splice(toIndex, 0, movedTab)
+        const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex
+        tabs.splice(insertIndex, 0, movedTab)
         const newOrder = tabs.map((t) => t.id)
         this.props.tabs.updateTabOrder(newOrder)
         if (this.props.onTabsReorder) {
             this.props.onTabsReorder(newOrder)
+        }
+    }
+
+    handleDragStart = (e: React.DragEvent, index: number) => {
+        e.dataTransfer.effectAllowed = 'move'
+        this.setState({ draggedIndex: index })
+    }
+
+    handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+        const midpoint = rect.left + rect.width / 2
+        const newDragOverIndex = e.clientX > midpoint ? index + 1 : index
+        if (this.state.dragOverIndex !== newDragOverIndex) {
+            this.setState({ dragOverIndex: newDragOverIndex })
+        }
+    }
+
+    handleDrop = (e: React.DragEvent, _toIndex: number) => {
+        e.preventDefault()
+        const { draggedIndex, dragOverIndex } = this.state
+        if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+            this.moveTab(draggedIndex, dragOverIndex)
+        }
+        this.setState({ draggedIndex: null, dragOverIndex: null })
+    }
+
+    handleDragEnd = () => {
+        this.setState({ draggedIndex: null, dragOverIndex: null })
+    }
+
+    handleDoubleClick = (tabId: string, currentTitle: string) => {
+        this.setState({ editingTabId: tabId, editValue: currentTitle })
+    }
+
+    handleRenameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({ editValue: e.target.value })
+    }
+
+    handleRenameSubmit = (tabId: string) => {
+        const { editValue } = this.state
+        if (editValue.trim()) {
+            this.handleTabRename(tabId, editValue.trim())
+        }
+        this.setState({ editingTabId: null, editValue: '' })
+    }
+
+    handleRenameKeyDown = (e: React.KeyboardEvent, tabId: string) => {
+        if (e.key === 'Enter') {
+            this.handleRenameSubmit(tabId)
+        } else if (e.key === 'Escape') {
+            this.setState({ editingTabId: null, editValue: '' })
         }
     }
 
@@ -145,12 +207,60 @@ class EnterpriseTabs<T extends TabInfo> extends Component<EnterpriseTabsProps<T>
                         onChange={(_, id) => this.handleTabClick(id)}
                         sx={{ flexGrow: 1 }}
                     >
-                        {tabs.map((tab) => (
+                        {tabs.map((tab, index) => (
                             <MuiTab
                                 key={tab.id}
                                 value={tab.id}
-                                label={tab.title}
-                                sx={{ minHeight: 36, py: 0 }}
+                                draggable
+                                onDragStart={(e) => this.handleDragStart(e, index)}
+                                onDragOver={(e) => this.handleDragOver(e, index)}
+                                onDrop={(e) => this.handleDrop(e, index)}
+                                onDragEnd={this.handleDragEnd}
+                                onDoubleClick={() => this.handleDoubleClick(tab.id, tab.title)}
+                                label={
+                                    this.state.editingTabId === tab.id ? (
+                                        <input
+                                            autoFocus
+                                            value={this.state.editValue}
+                                            onChange={this.handleRenameChange}
+                                            onKeyDown={(e) => this.handleRenameKeyDown(e, tab.id)}
+                                            onBlur={() => this.handleRenameSubmit(tab.id)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{
+                                                border: 'none',
+                                                outline: 'none',
+                                                background: 'transparent',
+                                                font: 'inherit',
+                                                color: 'inherit',
+                                                width: '100%',
+                                                padding: 0,
+                                            }}
+                                        />
+                                    ) : (
+                                        tab.title
+                                    )
+                                }
+                                sx={{
+                                    minHeight: 36,
+                                    py: 0,
+                                    textTransform: 'none',
+                                    opacity: this.state.draggedIndex === index ? 0.5 : 1,
+                                    borderLeft:
+                                        this.state.dragOverIndex === index &&
+                                        this.state.draggedIndex !== null &&
+                                        this.state.draggedIndex !== index
+                                            ? '2px solid'
+                                            : 'none',
+                                    borderRight:
+                                        this.state.dragOverIndex === index + 1 &&
+                                        index === tabs.length - 1 &&
+                                        this.state.draggedIndex !== null &&
+                                        this.state.draggedIndex !== index
+                                            ? '2px solid'
+                                            : 'none',
+                                    borderColor: 'primary.main',
+                                    cursor: 'grab',
+                                }}
                                 icon={
                                     <IconButton
                                         component="span"
