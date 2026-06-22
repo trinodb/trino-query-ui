@@ -1,4 +1,5 @@
 import TrinoQueryRunner from '../AsyncTrinoClient'
+import { TrinoClientProvider } from './TrinoClientProvider'
 import Column from '../schema/Column'
 import Catalog from './../schema/Catalog'
 import Schema from './../schema/Schema'
@@ -8,20 +9,12 @@ import TableReference from './../schema/TableReference'
 class SchemaProvider {
     // error message from last catalog fetch so that it can be displayed to the user
     public static lastSchemaFetchError: string | undefined = undefined
-
     static catalogs: Map<string, Catalog> = new Map<string, Catalog>()
     // map of fully qualified table name to tables
     static tables: Map<string, Table> = new Map<string, Table>()
 
-    // Configurable request headers for authentication
-    private static requestHeaders: Record<string, string> = {}
-
-    static setRequestHeaders(headers: Record<string, string>) {
-        this.requestHeaders = { ...headers }
-    }
-
     private static createRunner(): TrinoQueryRunner {
-        return new TrinoQueryRunner().SetRequestHeaders(this.requestHeaders)
+        return TrinoClientProvider.createClient()
     }
 
     static getTableNameList(catalogFilter: string | undefined, schemaFilter: string | undefined): string[] {

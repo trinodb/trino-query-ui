@@ -26,6 +26,9 @@ class TrinoQueryRunner {
     private trinoSchema: string | null = null
     private setHeadersCallback: (catalog: string | null, schema: string | null) => void = () => {}
 
+    // Base URL for API requests
+    private baseUrl: string | null = null
+
     // Authentication: custom headers to include in every Trino request (e.g. Authorization, X-Trino-User)
     private requestHeaders: Record<string, string> = {}
 
@@ -60,6 +63,11 @@ class TrinoQueryRunner {
 
     SetTruncationMessageCallback(callback: (msg: string) => void): TrinoQueryRunner {
         this.setTruncationMessage = callback
+        return this
+    }
+
+    SetBaseUrl(baseUrl: string): TrinoQueryRunner {
+        this.baseUrl = baseUrl
         return this
     }
 
@@ -115,10 +123,12 @@ class TrinoQueryRunner {
         this.setStatus(cancelState)
 
         const cancelPath = nextUri.replace(/^https?:\/\/[^/]+/, '')
+        const cancelUrl = this.baseUrl ? `${this.baseUrl}${cancelPath}` : cancelPath
 
-        fetch(cancelPath, {
+        fetch(cancelUrl, {
             method: 'DELETE',
             headers: this.resolveHeaders(),
+            credentials: 'include',
         })
             .then(() => {
                 const cancelledState = {
@@ -209,11 +219,13 @@ class TrinoQueryRunner {
             headers['X-Trino-Schema'] = this.trinoSchema
         }
 
-        fetch('/v1/statement', {
+        const url = this.baseUrl ? `${this.baseUrl}/v1/statement` : '/v1/statement'
+        fetch(url, {
             method: 'POST',
             headers,
             body: statement,
             signal: controller.signal,
+            credentials: 'include',
         })
             .then((response) => {
                 clearTimeout(timeoutId)
@@ -302,10 +314,12 @@ class TrinoQueryRunner {
                 return
             }
 
-            const nextUri = previous.nextUri.replace(/^https?:\/\/[^/]+/, '')
-            const response = await fetch(nextUri, {
+            const nextUriPath = previous.nextUri.replace(/^https?:\/\/[^/]+/, '')
+            const nextUriUrl = this.baseUrl ? `${this.baseUrl}${nextUriPath}` : nextUriPath
+            const response = await fetch(nextUriUrl, {
                 method: 'GET',
                 headers: this.resolveHeaders(),
+                credentials: 'include',
             })
 
             if (!response.ok) {

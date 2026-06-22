@@ -12,6 +12,7 @@ import ResultSet from './ResultSet'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import AsyncTrinoClient from './AsyncTrinoClient'
+import { TrinoClientProvider } from './sql/TrinoClientProvider'
 import { localStorageResultSetStore, type ResultSetSnapshot, type ResultSetStore } from './utils/resultSetStore'
 
 const TOOLBAR_HEIGHT = 64
@@ -70,7 +71,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             editingSchema: false,
             editorCollapsed: false,
         }
-        this.queryRunner = new AsyncTrinoClient()
+        this.queryRunner = TrinoClientProvider.createClient()
         this.setupQueryRunner()
     }
 
