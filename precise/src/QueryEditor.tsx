@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { styled } from '@mui/material/styles'
 import { Box, Drawer, useMediaQuery } from '@mui/material'
-import CssBaseline from '@mui/material/CssBaseline'
+import ScopedCssBaseline from '@mui/material/ScopedCssBaseline'
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar'
 import { ThemeProvider } from '@mui/material/styles'
 import QueryCell from './QueryCell'
@@ -163,7 +163,7 @@ export const QueryEditor = ({
 
     return (
         <ThemeProvider theme={muiThemeToUse()}>
-                <CssBaseline />
+            <ScopedCssBaseline className="trino-query-ui">
                 <Box
                     ref={containerRef}
                     sx={{
@@ -199,8 +199,8 @@ export const QueryEditor = ({
                                     display: 'flex',
                                     flexDirection: 'column',
                                     overflow: 'hidden',
-                                },
-                            },
+                                }
+                            }
                         }}
                     >
                         <CatalogViewer
@@ -223,7 +223,8 @@ export const QueryEditor = ({
                         />
                     </Main>
                 </Box>
-            </ThemeProvider>
+            </ScopedCssBaseline>
+        </ThemeProvider>
     )
 }
 
