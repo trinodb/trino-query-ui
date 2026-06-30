@@ -1,12 +1,18 @@
 {
-    "name": "@scc-digitalhub/trino-query-ui",
+    "name": "@dslab/trino-query-ui",
     "description": "Trino Query Editor react component",
-    "version": "0.1.3-alpha.0",
+    "version": "0.1.4",
     "author": {
         "name": "Trino contributors",
         "email": "general@trino.io",
         "url": "https://github.com/trinodb/trino-query-ui/graphs/contributors"
     },
+    "contributors": [
+      {
+        "name": "Sanasar Hambardzumyan",
+        "email": "shambardzumyan@fbk.eu"
+      }
+    ],
     "keywords": [
         "trino",
         "trinodb",
@@ -14,10 +20,11 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/scc-digitalhub/trino-query-ui.git"
+        "url": "https://github.com/scc-digitalhub/trino-query-ui.git"
     },
     "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
+        "access": "public",
+        "public": true
     },
     "homepage": "https://github.com/trinodb/trino-query-ui",
     "bugs": {
