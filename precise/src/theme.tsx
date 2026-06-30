@@ -36,9 +36,9 @@ export const darkTheme = createTheme({
                 },
             },
         },
-        MuiCssBaseline: {
+        MuiScopedCssBaseline: {
             styleOverrides: {
-                body: darkScrollbar(),
+                root: darkScrollbar(),
             },
         },
     },

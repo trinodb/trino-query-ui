@@ -12,6 +12,8 @@ import ResultSet from './ResultSet'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import AsyncTrinoClient from './AsyncTrinoClient'
+import { TrinoClientProvider } from './sql/TrinoClientProvider'
+import { localStorageResultSetStore, type ResultSetSnapshot, type ResultSetStore } from './utils/resultSetStore'
 
 const TOOLBAR_HEIGHT = 64
 
@@ -20,6 +22,7 @@ interface QueryCellState {
     columns: any[]
     response: any
     errorMessage: string
+    truncationMessage: string
     currentQuery: QueryInfo
     runningQuery: QueryInfo | undefined
     editingTitle: boolean
@@ -34,18 +37,33 @@ interface QueryCellProps {
     height: number
     onDrawerToggle: () => void
     theme?: string
+    requestHeaders?: Record<string, string>
+    resultSetStore?: ResultSetStore
 }
 
 class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     private queryRunner: AsyncTrinoClient
+    private readonly resultStore: ResultSetStore
+    private readonly snapshots = new Map<string, ResultSetSnapshot>()
+
+    private readonly emptySnapshot: ResultSetSnapshot = {
+        results: [],
+        columns: [],
+        response: {},
+        errorMessage: '',
+        truncationMessage: '',
+    }
 
     constructor(props: QueryCellProps) {
         super(props)
+        this.resultStore = props.resultSetStore ?? localStorageResultSetStore
+
         this.state = {
             results: [],
             columns: [],
             response: {},
             errorMessage: '',
+            truncationMessage: '',
             currentQuery: this.props.queries.getCurrentQuery(),
             runningQuery: undefined,
             editingTitle: false,
@@ -53,12 +71,13 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             editingSchema: false,
             editorCollapsed: false,
         }
-        this.queryRunner = new AsyncTrinoClient()
+        this.queryRunner = TrinoClientProvider.createClient()
         this.setupQueryRunner()
     }
 
     componentDidMount() {
         this.props.queries.addChangeListener(this.handleQueriesChange)
+        void this.restoreResultSet(this.state.currentQuery.id)
     }
 
     componentWillUnmount() {
@@ -70,6 +89,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         return (
             this.props.drawerOpen !== nextProps.drawerOpen ||
             this.props.height !== nextProps.height ||
+            this.props.requestHeaders !== nextProps.requestHeaders ||
             this.state.results !== nextState.results ||
             this.state.columns !== nextState.columns ||
             this.state.response !== nextState.response ||
@@ -84,28 +104,78 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         )
     }
 
+    componentDidUpdate(prevProps: QueryCellProps) {
+        if (prevProps.requestHeaders !== this.props.requestHeaders && this.props.requestHeaders) {
+            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
+        }
+    }
+
     handleQueriesChange = () => {
-        this.setState({ currentQuery: this.props.queries.getCurrentQuery() })
+        const currentQuery = this.props.queries.getCurrentQuery()
+        this.setState({ currentQuery }, () => {
+            void this.restoreResultSet(currentQuery.id)
+        })
+    }
+    private activeQueryId = () => this.state.runningQuery?.id ?? this.state.currentQuery.id
+
+    private applySnapshotToView = (snapshot: ResultSetSnapshot) => {
+        this.setState({
+            results: snapshot.results,
+            columns: snapshot.columns,
+            response: snapshot.response,
+            errorMessage: snapshot.errorMessage,
+            truncationMessage: snapshot.truncationMessage ?? '',
+        })
+    }
+
+    private persistSnapshot = (queryId: string, patch: Partial<ResultSetSnapshot>) => {
+        const next = { ...(this.snapshots.get(queryId) ?? this.emptySnapshot), ...patch }
+        this.snapshots.set(queryId, next)
+        void this.resultStore.save(queryId, next)
+
+        if (this.state.currentQuery.id === queryId) {
+            this.applySnapshotToView(next)
+        }
+    }
+
+    private async restoreResultSet(queryId: string) {
+        const snapshot = this.snapshots.get(queryId) ?? (await this.resultStore.load(queryId))
+        if (snapshot) {
+            this.snapshots.set(queryId, snapshot)
+            if (this.state.currentQuery.id === queryId) {
+                this.applySnapshotToView(snapshot)
+            }
+            return
+        }
+
+        if (this.state.currentQuery.id === queryId) {
+            this.applySnapshotToView(this.emptySnapshot)
+        }
     }
 
     setupQueryRunner() {
         this.queryRunner.SetResults = (newResults: any[]) => {
-            this.setState({ results: newResults })
+            this.persistSnapshot(this.activeQueryId(), { results: newResults })
         }
 
         this.queryRunner.SetColumns = (newColumns: any[]) => {
-            this.setState({ columns: newColumns })
+            this.persistSnapshot(this.activeQueryId(), { columns: newColumns })
         }
 
-        this.queryRunner.SetStatusCallback((setStatus: (newStatus: any) => any) => {
-            this.setState({ response: setStatus })
+        this.queryRunner.SetStatusCallback((newStatus: any) => {
+            this.persistSnapshot(this.activeQueryId(), { response: newStatus })
         })
 
         this.queryRunner.SetErrorMessageCallback((newErrorMessage: string) => {
-            this.setState({ errorMessage: newErrorMessage })
+            this.persistSnapshot(this.activeQueryId(), { errorMessage: newErrorMessage })
+        })
+
+        this.queryRunner.SetTruncationMessageCallback((msg: string) => {
+            this.persistSnapshot(this.activeQueryId(), { truncationMessage: msg })
         })
 
         this.queryRunner.SetStopped = () => {
+            this.setState({ runningQuery: undefined })
             this.SetStoppedState()
         }
 
@@ -119,6 +189,10 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 schema: schema ?? undefined,
             })
         })
+
+        if (this.props.requestHeaders) {
+            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
+        }
     }
 
     setRunningQueryId = (queryId: string | null) => {
@@ -141,16 +215,20 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         this.props.queries.updateQuery(this.state.currentQuery.id, { schema: schema })
     }
 
-    ClearResults() {
-        this.setState({ results: [], columns: [], errorMessage: '' })
+    ClearResults(queryId = this.state.currentQuery.id) {
+        this.snapshots.delete(queryId)
+        void this.resultStore.remove(queryId)
+
+        if (this.state.currentQuery.id === queryId) {
+            this.applySnapshotToView(this.emptySnapshot)
+        }
     }
 
     QueryStarted() {
-        this.ClearResults()
-        this.setRunningQueryId(this.state.currentQuery.id)
-        this.forceUpdate() // To ensure the play/stop icon updates
+        this.ClearResults(this.state.currentQuery.id)
+        this.setState({ runningQuery: this.state.currentQuery })
+        this.forceUpdate()
     }
-
     SetStoppedState() {
         this.forceUpdate() // To ensure the play/stop icon updates
     }
@@ -224,7 +302,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     render() {
-        const { results, columns, response, errorMessage, currentQuery, runningQuery } = this.state
+        const { results, columns, response, errorMessage, truncationMessage, currentQuery, runningQuery } = this.state
         const isQueryRunning =
             runningQuery !== undefined &&
             response.stats !== undefined &&
@@ -342,6 +420,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                     response={response}
                     height={resultSetHeight}
                     errorMessage={errorMessage}
+                    truncationMessage={truncationMessage}
                     queryId={runningQuery?.id}
                     onClearResults={() => this.ClearResults()}
                 />

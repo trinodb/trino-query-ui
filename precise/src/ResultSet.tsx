@@ -21,6 +21,7 @@ import Chip, { ChipProps } from '@mui/material/Chip'
 import ReactDOMServer from 'react-dom/server'
 import CopyLink from './utils/CopyLink'
 import ClearButton from './utils/ClearButton'
+import DownloadCsvButton from './utils/DownloadCsvButton'
 
 interface ResultSetProps {
     queryId: string | undefined
@@ -29,6 +30,7 @@ interface ResultSetProps {
     response: any
     height: number
     errorMessage: string
+    truncationMessage?: string
     onClearResults: (queryId: string | undefined) => void
 }
 
@@ -108,27 +110,57 @@ class ResultSet extends React.Component<ResultSetProps> {
         )
     }
 
+    private cachedResults: any[] | null = null
+    private cachedColumns: any[] | null = null
+    private cachedMuiRows: any[] = []
+    private cachedMuiColumns: GridColDef[] = []
+
+    private getMuiColumns(columns: any[]): GridColDef[] {
+        if (columns !== this.cachedColumns) {
+            this.cachedColumns = columns
+            this.cachedMuiColumns = columns.map((column: any) => ({ field: column.name, minWidth: 150 }))
+        }
+        return this.cachedMuiColumns
+    }
+
+    private getMuiRows(results: any[], columns: any[]): any[] {
+        if (results !== this.cachedResults || columns !== this.cachedColumns) {
+            this.cachedResults = results
+            this.cachedMuiRows = results
+                .flat()
+                .map((row: any[], i: number) =>
+                    Object.fromEntries([
+                        ['mui-row-id', `row-${i + 1}`],
+                        ...columns.map((c: any, j: number) => [c.name, row[j]]),
+                    ])
+                )
+        }
+        return this.cachedMuiRows
+    }
+
     renderTable = (results: any[], columns: any) => {
-        const muiColumns: GridColDef[] = columns.map((column: any) => ({ field: column.name, minWidth: 150 }))
-        const muiRows = results
-            .flat()
-            .map((row: any[], i: number) =>
-                Object.fromEntries([
-                    ['mui-row-id', `row-${i + 1}`],
-                    ...columns.map((c: any, j: number) => [c.name, row[j]]),
-                ])
-            )
+        const muiColumns = this.getMuiColumns(columns)
+        const muiRows = this.getMuiRows(results, columns)
 
         return (
-            <DataGrid
-                rows={muiRows}
-                columns={muiColumns}
-                sx={{
-                    '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
-                }}
-                getRowId={(row) => String(row['mui-row-id'])}
-                density="compact"
-            />
+            <Box sx={{ position: 'absolute', inset: 0 }}>
+                <DataGrid
+                    rows={muiRows}
+                    columns={muiColumns}
+                    pagination
+                    pageSizeOptions={[25, 50, 100]}
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 100, page: 0 } },
+                    }}
+                    sx={{
+                        width: '100%',
+                        height: '100%',
+                        '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
+                    }}
+                    getRowId={(row) => String(row['mui-row-id'])}
+                    density="compact"
+                />
+            </Box>
         )
     }
 
@@ -254,6 +286,39 @@ class ResultSet extends React.Component<ResultSetProps> {
         return tableText
     }
 
+    formatTableAsCsv(results: any[], columns: any[]): string {
+        if (!columns || columns.length === 0) {
+            return ''
+        }
+
+        const escapeCell = (value: any): string => {
+            if (value == null) return ''
+            const str = String(value)
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`
+            }
+            return str
+        }
+
+        const header = columns.map((column: any) => escapeCell(column.name)).join(',')
+        const rows = results
+            .flat()
+            .map((row: any[]) => row.map((cell: any) => escapeCell(cell)).join(','))
+        return [header, ...rows].join('\n')
+    }
+
+    downloadCsv() {
+        const { results, columns, queryId } = this.props
+        const csvContent = this.formatTableAsCsv(results, columns)
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${queryId ?? 'query'}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
     copy() {
         const { results, columns } = this.props
         const htmlContent = ReactDOMServer.renderToString(this.renderInnerTable(results, this.props.response, columns))
@@ -278,7 +343,7 @@ class ResultSet extends React.Component<ResultSetProps> {
     }
 
     render() {
-        const { queryId, results, columns, response, height, errorMessage } = this.props
+        const { queryId, results, columns, response, height, errorMessage, truncationMessage } = this.props
 
         // if the query ID has changed, reset the last processed rows and elapsed time
         if (this.lastQueryId !== queryId) {
@@ -343,6 +408,11 @@ class ResultSet extends React.Component<ResultSetProps> {
                                 {errorMessage}
                             </Alert>
                         ) : null}
+                        {truncationMessage ? (
+                            <Alert severity="warning" sx={{ py: 0 }}>
+                                {truncationMessage}
+                            </Alert>
+                        ) : null}
                         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.8rem' }}>
                             <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
                                 {this.getRowCount()} rows:
@@ -355,6 +425,7 @@ class ResultSet extends React.Component<ResultSetProps> {
                                     <>
                                         <ClearButton onClear={() => this.props.onClearResults(queryId)} />
                                         <CopyLink copy={() => this.copy()} />
+                                        <DownloadCsvButton download={() => this.downloadCsv()} />
                                     </>
                                 ) : null
                             ) : null}
@@ -607,15 +678,7 @@ class ResultSet extends React.Component<ResultSetProps> {
                         </Box>
                     </>
                 ) : columns && columns.length ? (
-                    <Box
-                        sx={{
-                            // decrease the resultset size by the header size
-                            height: height - 42,
-                            overflowY: 'auto',
-                        }}
-                    >
-                        {this.renderTable(results, columns)}
-                    </Box>
+                    <Box sx={{ position: 'relative', height: height - 42 }}>{this.renderTable(results, columns)}</Box>
                 ) : null}
             </Box>
         )

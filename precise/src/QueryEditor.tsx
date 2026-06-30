@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { styled } from '@mui/material/styles'
 import { Box, Drawer, useMediaQuery } from '@mui/material'
-import CssBaseline from '@mui/material/CssBaseline'
+import ScopedCssBaseline from '@mui/material/ScopedCssBaseline'
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar'
 import { ThemeProvider } from '@mui/material/styles'
 import QueryCell from './QueryCell'
@@ -9,11 +9,17 @@ import { darkTheme, lightTheme } from './theme'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import CatalogViewer from './controls/catalog_viewer/CatalogViewer'
+import SchemaProvider from './sql/SchemaProvider'
+import { TrinoClientProvider } from './sql/TrinoClientProvider'
+import { ResultSetStore } from './utils/resultSetStore'
 
 interface IQueryEditor {
     height: number
     theme?: 'dark' | 'light'
     enableCatalogSearchColumns?: boolean
+    requestHeaders?: Record<string, string>
+    resultSetStore?: ResultSetStore
+    baseUrl?: string
 }
 
 const DRAWER_WIDTH = 260
@@ -71,13 +77,27 @@ const AppBar = styled(MuiAppBar, {
     ],
 }))
 
-export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQueryEditor) => {
+export const QueryEditor = ({
+    height,
+    theme,
+    enableCatalogSearchColumns,
+    requestHeaders,
+    resultSetStore,
+    baseUrl,
+}: IQueryEditor) => {
     const [queries, setQueries] = useState<Queries>(() => new Queries())
     const [drawerOpen, setDrawerOpen] = useState<boolean>(true)
     const [queryRunning, setQueryRunning] = useState<boolean>(false)
     const [currentQuery, setCurrentQuery] = useState<QueryInfo>(queries.getCurrentQuery())
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
     const containerRef = useRef(null)
+
+    useEffect(() => {
+        TrinoClientProvider.configure({
+            baseUrl,
+            requestHeaders,
+        })
+    }, [baseUrl, requestHeaders])
 
     const muiThemeToUse = () => {
         if (theme === 'dark') {
@@ -143,64 +163,67 @@ export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQuer
 
     return (
         <ThemeProvider theme={muiThemeToUse()}>
-            <CssBaseline />
-            <Box
-                ref={containerRef}
-                sx={{
-                    border: 1,
-                    borderColor: 'divider',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    height: height,
-                }}
-            >
-                <AppBar color="transparent" open={drawerOpen} />
-
-                <Drawer
+            <ScopedCssBaseline className="trino-query-ui">
+                <Box
+                    ref={containerRef}
                     sx={{
-                        width: DRAWER_WIDTH,
-                        flexShrink: 0,
-                        '& .MuiDrawer-paper': {
-                            width: DRAWER_WIDTH,
-                            boxSizing: 'border-box',
-                        },
-                    }}
-                    variant="persistent"
-                    anchor="left"
-                    open={drawerOpen}
-                    ModalProps={{
-                        container: containerRef.current,
-                        disablePortal: true,
-                    }}
-                    slotProps={{
-                        paper: {
-                            sx: {
-                                position: 'absolute',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                overflow: 'hidden',
-                            },
-                        },
+                        border: 1,
+                        borderColor: 'divider',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        height: height,
                     }}
                 >
-                    <CatalogViewer
-                        onGenerateQuery={setQueryContent}
-                        onAppendQuery={appendQueryContent}
-                        onDrawerToggle={() => setDrawerOpen(false)}
-                        enableSearchColumns={enableCatalogSearchColumns}
-                    />
-                </Drawer>
+                    <AppBar color="transparent" open={drawerOpen} />
 
-                <Main open={drawerOpen} sx={{ p: 0 }}>
-                    <QueryCell
-                        queries={queries}
-                        drawerOpen={drawerOpen}
-                        height={height}
-                        onDrawerToggle={() => setDrawerOpen(true)}
-                        theme={theme}
-                    />
-                </Main>
-            </Box>
+                    <Drawer
+                        sx={{
+                            width: DRAWER_WIDTH,
+                            flexShrink: 0,
+                            '& .MuiDrawer-paper': {
+                                width: DRAWER_WIDTH,
+                                boxSizing: 'border-box',
+                            },
+                        }}
+                        variant="persistent"
+                        anchor="left"
+                        open={drawerOpen}
+                        ModalProps={{
+                            container: containerRef.current,
+                            disablePortal: true,
+                        }}
+                        slotProps={{
+                            paper: {
+                                sx: {
+                                    position: 'absolute',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden',
+                                }
+                            }
+                        }}
+                    >
+                        <CatalogViewer
+                            onGenerateQuery={setQueryContent}
+                            onAppendQuery={appendQueryContent}
+                            onDrawerToggle={() => setDrawerOpen(false)}
+                            enableSearchColumns={enableCatalogSearchColumns}
+                        />
+                    </Drawer>
+
+                    <Main open={drawerOpen} sx={{ p: 0 }}>
+                        <QueryCell
+                            queries={queries}
+                            drawerOpen={drawerOpen}
+                            height={height}
+                            onDrawerToggle={() => setDrawerOpen(true)}
+                            theme={theme}
+                            requestHeaders={requestHeaders}
+                            resultSetStore={resultSetStore}
+                        />
+                    </Main>
+                </Box>
+            </ScopedCssBaseline>
         </ThemeProvider>
     )
 }

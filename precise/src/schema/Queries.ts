@@ -8,7 +8,7 @@ class Queries extends Tabs<QueryInfo> {
         const queryList: QueryInfo[] = []
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i)
-            if (key && key.startsWith('query_')) {
+            if (key && key.startsWith('query_') && !key.startsWith('query_result_')) {
                 const value = localStorage.getItem(key)
                 if (value) {
                     try {
@@ -56,6 +56,7 @@ class Queries extends Tabs<QueryInfo> {
 
     deleteTabFromStorage(tabId: string): void {
         localStorage.removeItem(`query_${tabId}`)
+        localStorage.removeItem(`query_result_${tabId}`)
     }
 
     createNewTab(): QueryInfo {
