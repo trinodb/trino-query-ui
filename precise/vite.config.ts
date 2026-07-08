@@ -4,7 +4,10 @@ import react from '@vitejs/plugin-react'
 // Used for local debugging against Trino also running on localhost at port 8080:
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+  ],
+  base: './',
   server: {
     proxy: {
       '/v1': {
