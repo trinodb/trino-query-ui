@@ -8,10 +8,10 @@
         "url": "https://github.com/trinodb/trino-query-ui/graphs/contributors"
     },
     "contributors": [
-      {
-        "name": "Sanasar Hambardzumyan",
-        "email": "shambardzumyan@fbk.eu"
-      }
+        {
+            "name": "Sanasar Hambardzumyan",
+            "email": "shambardzumyan@fbk.eu"
+        }
     ],
     "keywords": [
         "trino",
@@ -55,14 +55,12 @@
     "dependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
-        "@monaco-editor/react": "^4.7.0",
         "@mui/icons-material": "^7.3.2",
         "@mui/material": "^7.3.2",
         "@mui/x-data-grid": "^8.14.0",
         "@mui/x-tree-view": "^8.13.1",
         "antlr4-c3": "^3.4.4",
         "antlr4ng": "^3.0.16",
-        "monaco-editor": "^0.55.1",
         "sql-formatter": "^15.6.9",
         "uuidv4": "^6.2.13"
     },
@@ -86,6 +84,8 @@
     },
     "peerDependencies": {
         "react": "^19.1.4",
-        "react-dom": "^19.1.4"
+        "react-dom": "^19.1.4",
+        "monaco-editor": "^0.55.1",
+        "@monaco-editor/react": "^4.7.0"
     }
 }

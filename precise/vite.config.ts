@@ -31,7 +31,9 @@ export default defineConfig({
         "react-dom/client",
         "react-dom/server",
         "react/jsx-runtime",
-        "react/jsx-dev-runtime"
+        "react/jsx-dev-runtime",
+        "monaco-editor",
+        "@monaco-editor/react"
       ],
       output: {
         globals: {
@@ -40,7 +42,9 @@ export default defineConfig({
           "react-dom/client": "ReactDOMClient",
           "react-dom/server": "ReactDOMServer",
           "react/jsx-runtime": "jsxRuntime",
-          "react/jsx-dev-runtime": "jsxDevRuntime"
+          "react/jsx-dev-runtime": "jsxDevRuntime",
+          "monaco-editor": "monaco",
+          "@monaco-editor/react": "MonacoReact"
         }
       }
     }

@@ -1,3 +1,4 @@
+import './monacoEnvironment'
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import QueryEditor from './QueryEditor'
