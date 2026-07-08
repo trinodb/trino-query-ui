@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { styled } from '@mui/material/styles'
 import { Box, Drawer, useMediaQuery } from '@mui/material'
 import ScopedCssBaseline from '@mui/material/ScopedCssBaseline'
@@ -92,12 +92,11 @@ export const QueryEditor = ({
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
     const containerRef = useRef(null)
 
-    useEffect(() => {
-        TrinoClientProvider.configure({
-            baseUrl,
-            requestHeaders,
-        })
-    }, [baseUrl, requestHeaders])
+
+    TrinoClientProvider.configure({
+        baseUrl,
+        requestHeaders,
+    })
 
     const muiThemeToUse = () => {
         if (theme === 'dark') {
