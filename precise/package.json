@@ -80,7 +80,9 @@
         "react": "^19.1.4",
         "react-dom": "^19.1.4",
         "typescript": "^5.9.2",
-        "vite": "^7.1.7"
+        "vite": "^7.1.7",
+        "monaco-editor": "^0.55.1",
+        "@monaco-editor/react": "^4.7.0"
     },
     "peerDependencies": {
         "react": "^19.1.4",
