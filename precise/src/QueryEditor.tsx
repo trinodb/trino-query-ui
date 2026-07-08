@@ -217,6 +217,7 @@ export const QueryEditor = ({
                             height={height}
                             onDrawerToggle={() => setDrawerOpen(true)}
                             theme={theme}
+                            baseUrl={baseUrl}
                             requestHeaders={requestHeaders}
                             resultSetStore={resultSetStore}
                         />
