@@ -37,6 +37,7 @@ interface QueryCellProps {
     height: number
     onDrawerToggle: () => void
     theme?: string
+    baseUrl?: string
     requestHeaders?: Record<string, string>
     resultSetStore?: ResultSetStore
 }
@@ -89,6 +90,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         return (
             this.props.drawerOpen !== nextProps.drawerOpen ||
             this.props.height !== nextProps.height ||
+            this.props.baseUrl !== nextProps.baseUrl ||
             this.props.requestHeaders !== nextProps.requestHeaders ||
             this.state.results !== nextState.results ||
             this.state.columns !== nextState.columns ||
@@ -105,6 +107,9 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     componentDidUpdate(prevProps: QueryCellProps) {
+        if (prevProps.baseUrl !== this.props.baseUrl && this.props.baseUrl) {
+            this.queryRunner.SetBaseUrl(this.props.baseUrl)
+        }
         if (prevProps.requestHeaders !== this.props.requestHeaders && this.props.requestHeaders) {
             this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
         }
@@ -404,7 +409,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 <Box sx={{ display: this.state.editorCollapsed ? 'none' : 'block' }}>
                     <QueryEditorPane
                         onQueryChange={this.handleQueryChange}
-                        onSelectChange={() => {}}
+                        onSelectChange={() => { }}
                         onExecute={() => this.Execute()}
                         queries={this.props.queries}
                         catalog={currentQuery.catalog}
