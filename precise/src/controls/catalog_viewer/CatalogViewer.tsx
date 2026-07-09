@@ -58,10 +58,6 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     // Initialize viewer state manager
     useEffect(() => {
         viewerState.current = new ViewerStateManager((update) => {
-            console.log('State update received:', {
-                matches: update.matches.size,
-                expanded: update.expandedNodes.size,
-            })
             setMatches(update.matches)
             setExpandedNodes(update.expandedNodes)
         }, setIsLoadingColumns)
@@ -79,34 +75,24 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     // Apply search when filter or search options change
     useEffect(() => {
         if (viewerState.current) {
-            console.log('Starting new search:', {
-                filter: debouncedFilterText,
-                searchColumns,
-                catalogCount: catalogs.size,
-            })
             viewerState.current.startSearch(debouncedFilterText, searchColumns, catalogs)
         }
     }, [debouncedFilterText, searchColumns, catalogs])
 
-    const loadCatalogs = useCallback(async () => {
+    const loadCatalogs = useCallback(() => {
         setIsLoading(true)
         setErrorMessage(undefined)
 
-        try {
-            await SchemaProvider.populateCatalogsAndRefreshTableList(
-                (nextCatalogs) => {
-                    setCatalogs(nextCatalogs)
-                    setIsLoading(false)
-                },
-                (error: string) => {
-                    setErrorMessage(error)
-                    setIsLoading(false)
-                }
-            )
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred')
-            setIsLoading(false)
-        }
+        SchemaProvider.populateCatalogsAndRefreshTableList(
+            (nextCatalogs) => {
+                setCatalogs(nextCatalogs)
+                setIsLoading(false)
+            },
+            (error: string) => {
+                setErrorMessage(error)
+                setIsLoading(false)
+            }
+        )
     }, [])
 
     const handleToggle = async (path: string) => {

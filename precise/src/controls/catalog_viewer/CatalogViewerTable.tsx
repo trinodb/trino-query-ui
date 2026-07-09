@@ -37,17 +37,8 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     // Load columns when expanded OR when there's an active filter
     useEffect(() => {
         if ((isExpanded || filterText) && !table.hasLoadedColumns()) {
-            console.log(`Loading table data for ${tableRef.tableName}`, {
-                isExpanded,
-                filterText,
-                hasColumns: table.getColumns().length > 0,
-            })
-
             table.setLoading(true)
             SchemaProvider.getTableWithCache(tableRef, (loadedTable: Table) => {
-                console.log(`Table data loaded for ${tableRef.tableName}`, {
-                    columnCount: loadedTable.getColumns().length,
-                })
                 setTable(loadedTable)
             })
         }

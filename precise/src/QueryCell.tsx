@@ -96,6 +96,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             this.state.columns !== nextState.columns ||
             this.state.response !== nextState.response ||
             this.state.errorMessage !== nextState.errorMessage ||
+            this.state.truncationMessage !== nextState.truncationMessage ||
             this.state.runningQuery !== nextState.runningQuery ||
             this.state.currentQuery !== nextState.currentQuery ||
             this.state.currentQuery.title !== nextState.currentQuery.title ||
@@ -107,11 +108,11 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     componentDidUpdate(prevProps: QueryCellProps) {
-        if (prevProps.baseUrl !== this.props.baseUrl && this.props.baseUrl) {
-            this.queryRunner.SetBaseUrl(this.props.baseUrl)
+        if (prevProps.baseUrl !== this.props.baseUrl) {
+            this.queryRunner.SetBaseUrl(TrinoClientProvider.getBaseUrl() ?? '')
         }
-        if (prevProps.requestHeaders !== this.props.requestHeaders && this.props.requestHeaders) {
-            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
+        if (prevProps.requestHeaders !== this.props.requestHeaders) {
+            this.queryRunner.SetRequestHeaders(TrinoClientProvider.getRequestHeaders())
         }
     }
 
@@ -195,17 +196,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             })
         })
 
-        if (this.props.requestHeaders) {
-            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
-        }
-    }
-
-    setRunningQueryId = (queryId: string | null) => {
-        this.setState({ runningQuery: this.state.currentQuery })
-    }
-
-    handleQueryChange = (newQuery: string) => {
-        //this.props.queries.updateQuery(this.state.currentQuery.id, { query: newQuery });
+        this.queryRunner.SetRequestHeaders(TrinoClientProvider.getRequestHeaders())
     }
 
     handleTitleChange = (title: string) => {
@@ -408,7 +399,6 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 <Divider />
                 <Box sx={{ display: this.state.editorCollapsed ? 'none' : 'block' }}>
                     <QueryEditorPane
-                        onQueryChange={this.handleQueryChange}
                         onSelectChange={() => { }}
                         onExecute={() => this.Execute()}
                         queries={this.props.queries}

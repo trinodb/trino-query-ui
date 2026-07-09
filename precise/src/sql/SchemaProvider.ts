@@ -63,7 +63,7 @@ class SchemaProvider {
             return this.tables.get(tableRef.fullyQualified)
         }
         // async operation to refresh cache but return null in the meantime
-        SchemaProvider.getTableRefreshCache(tableRef, (table: Table) => {})
+        SchemaProvider.getTableRefreshCache(tableRef, (table: Table) => { })
         return null
     }
 
@@ -110,8 +110,8 @@ class SchemaProvider {
                         })
                         .StartQuery(
                             'SELECT table_schema, table_name, table_type FROM ' +
-                                catalog.getName() +
-                                '.information_schema.tables'
+                            catalog.getName() +
+                            '.information_schema.tables'
                         )
                 }
             })
@@ -123,7 +123,7 @@ class SchemaProvider {
     }
 
     /* callback returns a table type */
-    static async getTableRefreshCache(tableRef: TableReference, callback: (table: Table) => void) {
+    static getTableRefreshCache(tableRef: TableReference, callback: (table: Table) => void) {
         // First try to load all tables in the schema at once
         const query = this.createRunner()
         query

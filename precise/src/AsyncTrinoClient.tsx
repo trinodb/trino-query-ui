@@ -5,16 +5,16 @@ class TrinoQueryRunner {
     private rowsRead: number = 0
     private isRunning: boolean = false
     private cancellationToken: string | null = null
-    SetResults = (newResults: any[]) => void {}
+    SetResults = (_newResults: any[]) => { }
     // make this return the TrinoQueryRunner object
-    private setAllResults = (allResults: any[], error: boolean) => void {}
-    SetColumns = (newColumns: any[]) => {}
-    private setStatus = (newStatus: any) => {}
-    SetScanStats = (newScanStats: any) => {}
-    private setErrorMessage = (newErrorMessage: string) => {}
-    SetCancelling = () => {}
-    SetStopped = () => {}
-    SetStarted = () => {}
+    private setAllResults = (_allResults: any[], _error: boolean) => { }
+    SetColumns = (newColumns: any[]) => { }
+    private setStatus = (newStatus: any) => { }
+    SetScanStats = (newScanStats: any) => { }
+    private setErrorMessage = (newErrorMessage: string) => { }
+    SetCancelling = () => { }
+    SetStopped = () => { }
+    SetStarted = () => { }
     pages: any[] = []
     columns: any[] = []
     backoff_delay_msec = 0
@@ -24,7 +24,7 @@ class TrinoQueryRunner {
     // Add properties to store catalog and schema headers
     private trinoCatalog: string | null = null
     private trinoSchema: string | null = null
-    private setHeadersCallback: (catalog: string | null, schema: string | null) => void = () => {}
+    private setHeadersCallback: (catalog: string | null, schema: string | null) => void = () => { }
 
     // Base URL for API requests
     private baseUrl: string | null = null
@@ -39,7 +39,7 @@ class TrinoQueryRunner {
     // Hard cap for the number of rows in the cached result set.
     private static readonly MAX_ROWS = 10_000
 
-    private setTruncationMessage = (_msg: string) => {}
+    private setTruncationMessage = (_msg: string) => { }
     SetAllResultsCallback(setAllResults: (n: any[], error: boolean) => any): TrinoQueryRunner {
         this.setAllResults = setAllResults
         return this
@@ -207,6 +207,12 @@ class TrinoQueryRunner {
         this.rowsRead = 0
         this.ClearState()
 
+        this.executeStartQuery(statement)
+
+        return this
+    }
+
+    private async executeStartQuery(statement: string) {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort('Timeout: Trino is not responding'), 15000)
 
@@ -220,68 +226,43 @@ class TrinoQueryRunner {
         }
 
         const url = this.baseUrl ? `${this.baseUrl}/v1/statement` : '/v1/statement'
-        fetch(url, {
-            method: 'POST',
-            headers,
-            body: statement,
-            signal: controller.signal,
-            credentials: 'include',
-        })
-            .then((response) => {
-                clearTimeout(timeoutId)
 
-                if (!response.ok) {
-                    throw new Error(`${response.statusText} (${response.status})`)
-                }
-
-                this.extractHeaders(response.headers)
-                return response.json()
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: statement,
+                signal: controller.signal,
+                credentials: 'include',
             })
-            .then((data) => {
-                const shouldContinue = this.HandleResults(data)
-                this.UpdateStatus(data)
 
-                if (!shouldContinue) {
-                    return
-                }
+            clearTimeout(timeoutId)
 
-                if (data.nextUri) {
-                    if (this.cancellationToken) {
-                        return
-                    }
+            if (!response.ok) {
+                throw new Error(`${response.statusText} (${response.status})`)
+            }
 
-                    this.backoff_delay_msec = Math.min(this.backoff_delay_msec + 20, 1000)
-                    setTimeout(() => this.NextPage(data), this.backoff_delay_msec)
-                } else {
-                    this.HandleSetAllResults(data?.stats?.state === 'FAILED')
-                    this.HandleStopped()
-                    console.log('Query finished')
-                }
-            })
-            .catch((error) => {
-                clearTimeout(timeoutId)
+            this.extractHeaders(response.headers)
+            const data = await response.json()
 
-                let errorMessage = 'An unexpected error occurred'
+            const shouldContinue = this.HandleResults(data)
+            this.UpdateStatus(data)
 
-                if (error instanceof DOMException && error.name === 'AbortError') {
-                    errorMessage = 'Query timed out - Trino server took too long to respond'
-                } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-                    if (navigator.onLine === false) {
-                        errorMessage = 'You appear to be offline. Please check your internet connection.'
-                    } else {
-                        errorMessage =
-                            'Failed to connect to Trino server - the server may be down, unreachable, or incorrectly configured'
-                    }
-                } else if (error instanceof Error) {
-                    errorMessage = error.message
-                }
+            if (!shouldContinue) {
+                return
+            }
 
-                console.error('Error starting query:', errorMessage)
-                this.setErrorMessage(errorMessage)
+            if (data.nextUri) {
+                this.scheduleNextPage(data)
+            } else {
+                this.HandleSetAllResults(data?.stats?.state === 'FAILED')
                 this.HandleStopped()
-            })
-
-        return this
+            }
+        } catch (error) {
+            clearTimeout(timeoutId)
+            this.handleFetchError(error)
+            this.HandleStopped()
+        }
     }
 
     private extractHeaders(headers: Headers) {
@@ -337,36 +318,42 @@ class TrinoQueryRunner {
             }
 
             if (data.nextUri) {
-                // We want to cancel just after the status is updated, otherwise if the queue is QUEUED we will not be able to cancel
-                if (this.cancellationToken) {
-                    return
-                }
-
-                // backoff delay add 20ms up to 1000ms
-                this.backoff_delay_msec = Math.min(this.backoff_delay_msec + 20, 1000)
-                setTimeout(() => this.NextPage(data), this.backoff_delay_msec)
+                this.scheduleNextPage(data)
             } else {
                 this.HandleSetAllResults(data?.stats?.state === 'FAILED')
                 this.HandleStopped()
-                console.log('Query finished')
             }
         } catch (error) {
-            if (error instanceof Error) {
-                // handle errors of time net::ERR_CONNECTION_REFUSED
-                if (error.message === 'Failed to fetch') {
-                    console.error('Error:', error.message + ' - Trino is not running or not reachable')
-                    this.setErrorMessage(error.message)
-                } else {
-                    console.error('Error:', error.message)
-                    this.setErrorMessage(error.message)
-                }
-            } else {
-                // Handle cases where the thrown error is not an Error instance
-                console.error('An unexpected error occurred:', error)
-                this.setErrorMessage('An unexpected error occurred')
-            }
+            this.handleFetchError(error)
             this.HandleStopped()
         }
+    }
+
+    private scheduleNextPage(data: any) {
+        if (this.cancellationToken) {
+            return
+        }
+        this.backoff_delay_msec = Math.min(this.backoff_delay_msec + 20, 1000)
+        setTimeout(() => this.NextPage(data), this.backoff_delay_msec)
+    }
+
+    private handleFetchError(error: unknown) {
+        let errorMessage = 'An unexpected error occurred'
+
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            errorMessage = 'Query timed out - Trino server took too long to respond'
+        } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            if (navigator.onLine === false) {
+                errorMessage = 'You appear to be offline. Please check your internet connection.'
+            } else {
+                errorMessage =
+                    'Failed to connect to Trino server - the server may be down, unreachable, or incorrectly configured'
+            }
+        } else if (error instanceof Error) {
+            errorMessage = error.message
+        }
+
+        this.setErrorMessage(errorMessage)
     }
 
     HandleResults(data: any): boolean {

@@ -31,7 +31,6 @@ const TABS_HEIGHT = 64
 interface QueryEditorPaneProps {
     queries: Queries
     maxHeight: number
-    onQueryChange: (query: string) => void
     onSelectChange: (selectedText: string) => void
     onExecute: () => void
     catalog?: string
@@ -176,7 +175,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     handleEditorChange = (newQuery: string | undefined) => {
         if (newQuery !== undefined && this.state.currentQuery) {
             this.props.queries.updateQuery(this.state.currentQuery.id, { query: newQuery })
-            this.props.onQueryChange(newQuery)
         }
     }
 
@@ -271,10 +269,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             endWord = i
         }
 
-        // In parseAndDecoratePromise, after calculating currentWord:
-        console.log('Current word being parsed:', currentWord)
-        console.log('Cursor position:', caretPosition.lineNumber, caretPosition.column)
-        console.log('Word bounds:', startWordColumn, 'to', endWord)
 
         const inputStream = CharStream.fromString(newValue)
         const lexer = new SqlBaseLexer(inputStream)
@@ -536,11 +530,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
         //console.log("After table names, completion items:", completionItems.length);
         for (const statement of statements) {
-            console.log(statement)
-            // log location of caret vs statement position
-            console.log('caret: ' + caretPosition.column + ' ' + caretPosition.lineNumber)
-            console.log('statement start: ' + statement.start.column + ' ' + statement.start.line)
-            console.log('statement end: ' + statement.end.column + ' ' + statement.end.line)
 
             // if inside ColumnReferenceContext, we can use the table name to get the columns
             if (
@@ -548,7 +537,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 (caretPosition.column <= statement.end.column && statement.end.line == caretPosition.lineNumber) ||
                 (caretPosition.lineNumber > statement.start.line && caretPosition.lineNumber < statement.end.line)
             ) {
-                console.log('Found statement')
 
                 const tableName: string = statement.tableName
                 let tableReference: TableReference | undefined
@@ -641,8 +629,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             this.lastCompletionItemsPosition = caretPosition
         }
 
-        // At the very end of the method:
-        console.log('Final completion items:', completionItems.length)
     }
 
     cancelParsing() {
