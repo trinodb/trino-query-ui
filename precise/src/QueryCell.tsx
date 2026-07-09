@@ -96,6 +96,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             this.state.columns !== nextState.columns ||
             this.state.response !== nextState.response ||
             this.state.errorMessage !== nextState.errorMessage ||
+            this.state.truncationMessage !== nextState.truncationMessage ||
             this.state.runningQuery !== nextState.runningQuery ||
             this.state.currentQuery !== nextState.currentQuery ||
             this.state.currentQuery.title !== nextState.currentQuery.title ||
