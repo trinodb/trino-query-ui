@@ -203,10 +203,6 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         this.setState({ runningQuery: this.state.currentQuery })
     }
 
-    handleQueryChange = (newQuery: string) => {
-        //this.props.queries.updateQuery(this.state.currentQuery.id, { query: newQuery });
-    }
-
     handleTitleChange = (title: string) => {
         this.props.queries.updateQuery(this.state.currentQuery.id, { title: title })
     }
@@ -407,7 +403,6 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 <Divider />
                 <Box sx={{ display: this.state.editorCollapsed ? 'none' : 'block' }}>
                     <QueryEditorPane
-                        onQueryChange={this.handleQueryChange}
                         onSelectChange={() => { }}
                         onExecute={() => this.Execute()}
                         queries={this.props.queries}

@@ -31,7 +31,6 @@ const TABS_HEIGHT = 64
 interface QueryEditorPaneProps {
     queries: Queries
     maxHeight: number
-    onQueryChange: (query: string) => void
     onSelectChange: (selectedText: string) => void
     onExecute: () => void
     catalog?: string
@@ -176,7 +175,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     handleEditorChange = (newQuery: string | undefined) => {
         if (newQuery !== undefined && this.state.currentQuery) {
             this.props.queries.updateQuery(this.state.currentQuery.id, { query: newQuery })
-            this.props.onQueryChange(newQuery)
         }
     }
 
