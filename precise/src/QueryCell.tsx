@@ -199,10 +199,6 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
         this.queryRunner.SetRequestHeaders(TrinoClientProvider.getRequestHeaders())
     }
 
-    setRunningQueryId = (queryId: string | null) => {
-        this.setState({ runningQuery: this.state.currentQuery })
-    }
-
     handleTitleChange = (title: string) => {
         this.props.queries.updateQuery(this.state.currentQuery.id, { title: title })
     }
