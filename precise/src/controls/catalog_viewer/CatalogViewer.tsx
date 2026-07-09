@@ -58,10 +58,6 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     // Initialize viewer state manager
     useEffect(() => {
         viewerState.current = new ViewerStateManager((update) => {
-            console.log('State update received:', {
-                matches: update.matches.size,
-                expanded: update.expandedNodes.size,
-            })
             setMatches(update.matches)
             setExpandedNodes(update.expandedNodes)
         }, setIsLoadingColumns)
@@ -79,11 +75,6 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     // Apply search when filter or search options change
     useEffect(() => {
         if (viewerState.current) {
-            console.log('Starting new search:', {
-                filter: debouncedFilterText,
-                searchColumns,
-                catalogCount: catalogs.size,
-            })
             viewerState.current.startSearch(debouncedFilterText, searchColumns, catalogs)
         }
     }, [debouncedFilterText, searchColumns, catalogs])
