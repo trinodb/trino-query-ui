@@ -107,11 +107,11 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     componentDidUpdate(prevProps: QueryCellProps) {
-        if (prevProps.baseUrl !== this.props.baseUrl && this.props.baseUrl) {
-            this.queryRunner.SetBaseUrl(this.props.baseUrl)
+        if (prevProps.baseUrl !== this.props.baseUrl) {
+            this.queryRunner.SetBaseUrl(TrinoClientProvider.getBaseUrl() ?? '')
         }
-        if (prevProps.requestHeaders !== this.props.requestHeaders && this.props.requestHeaders) {
-            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
+        if (prevProps.requestHeaders !== this.props.requestHeaders) {
+            this.queryRunner.SetRequestHeaders(TrinoClientProvider.getRequestHeaders())
         }
     }
 
@@ -195,9 +195,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             })
         })
 
-        if (this.props.requestHeaders) {
-            this.queryRunner.SetRequestHeaders(this.props.requestHeaders)
-        }
+        this.queryRunner.SetRequestHeaders(TrinoClientProvider.getRequestHeaders())
     }
 
     setRunningQueryId = (queryId: string | null) => {
