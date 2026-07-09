@@ -79,25 +79,20 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
         }
     }, [debouncedFilterText, searchColumns, catalogs])
 
-    const loadCatalogs = useCallback(async () => {
+    const loadCatalogs = useCallback(() => {
         setIsLoading(true)
         setErrorMessage(undefined)
 
-        try {
-            await SchemaProvider.populateCatalogsAndRefreshTableList(
-                (nextCatalogs) => {
-                    setCatalogs(nextCatalogs)
-                    setIsLoading(false)
-                },
-                (error: string) => {
-                    setErrorMessage(error)
-                    setIsLoading(false)
-                }
-            )
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred')
-            setIsLoading(false)
-        }
+        SchemaProvider.populateCatalogsAndRefreshTableList(
+            (nextCatalogs) => {
+                setCatalogs(nextCatalogs)
+                setIsLoading(false)
+            },
+            (error: string) => {
+                setErrorMessage(error)
+                setIsLoading(false)
+            }
+        )
     }, [])
 
     const handleToggle = async (path: string) => {

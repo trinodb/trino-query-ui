@@ -5,9 +5,9 @@ class TrinoQueryRunner {
     private rowsRead: number = 0
     private isRunning: boolean = false
     private cancellationToken: string | null = null
-    SetResults = (newResults: any[]) => void {}
+    SetResults = (_newResults: any[]) => { }
     // make this return the TrinoQueryRunner object
-    private setAllResults = (allResults: any[], error: boolean) => void {}
+    private setAllResults = (_allResults: any[], _error: boolean) => { }
     SetColumns = (newColumns: any[]) => { }
     private setStatus = (newStatus: any) => { }
     SetScanStats = (newScanStats: any) => { }
