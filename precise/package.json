@@ -85,8 +85,8 @@
         "@monaco-editor/react": "^4.7.0"
     },
     "peerDependencies": {
-        "react": "^19.0.0",
-        "react-dom": "^19.0.0",
+        "react": "^18.0.0 || ^19.0.0",
+        "react-dom": "^18.0.0 || ^19.0.0",
         "monaco-editor": "^0.52.0",
         "@monaco-editor/react": "^4.6.0",
         "@emotion/react": "^11.0.0",
