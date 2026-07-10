@@ -1,7 +1,7 @@
 {
     "name": "@dslab/trino-query-ui",
     "description": "Trino Query Editor react component",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "author": {
         "name": "Trino contributors",
         "email": "general@trino.io",
@@ -53,12 +53,6 @@
         "antlr4ng": "antlr4ng -visitor -listener -Dlanguage=TypeScript -o src/generated/lexer/SqlBase.g4 trino/SqlBase.g4"
     },
     "dependencies": {
-        "@emotion/react": "^11.14.0",
-        "@emotion/styled": "^11.14.1",
-        "@mui/icons-material": "^7.3.2",
-        "@mui/material": "^7.3.2",
-        "@mui/x-data-grid": "^8.14.0",
-        "@mui/x-tree-view": "^8.13.1",
         "antlr4-c3": "^3.4.4",
         "antlr4ng": "^3.0.16",
         "sql-formatter": "^15.6.9",
@@ -70,6 +64,12 @@
         "@typescript-eslint/eslint-plugin": "^8.44.1",
         "@typescript-eslint/parser": "^8.44.1",
         "@vitejs/plugin-react": "^5.0.3",
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
+        "@mui/icons-material": "^7.3.2",
+        "@mui/material": "^7.3.2",
+        "@mui/x-data-grid": "^8.5.0",
+        "@mui/x-tree-view": "^8.5.0",
         "antlr4ng-cli": "^2.0.0",
         "eslint": "^9.36.0",
         "eslint-plugin-react-hooks": "^5.2.0",
@@ -85,9 +85,15 @@
         "@monaco-editor/react": "^4.7.0"
     },
     "peerDependencies": {
-        "react": "^19.1.4",
-        "react-dom": "^19.1.4",
-        "monaco-editor": "^0.55.1",
-        "@monaco-editor/react": "^4.7.0"
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "monaco-editor": "^0.52.0",
+        "@monaco-editor/react": "^4.6.0",
+        "@emotion/react": "^11.0.0",
+        "@emotion/styled": "^11.0.0",
+        "@mui/icons-material": "^7.0.0",
+        "@mui/material": "^7.0.0",
+        "@mui/x-data-grid": "^8.0.0",
+        "@mui/x-tree-view": "^8.0.0"
     }
 }
