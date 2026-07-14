@@ -17,7 +17,8 @@ import {
     Typography,
 } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
-import Chip, { ChipProps } from '@mui/material/Chip'
+import Chip from '@mui/material/Chip'
+import type { ChipProps } from '@mui/material/Chip'
 import ReactDOMServer from 'react-dom/server'
 import CopyLink from './utils/CopyLink'
 import ClearButton from './utils/ClearButton'

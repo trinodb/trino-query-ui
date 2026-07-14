@@ -4,15 +4,15 @@ import CodeIcon from '@mui/icons-material/Code'
 import Maximize from '@mui/icons-material/Maximize'
 import Minimize from '@mui/icons-material/Minimize'
 import Editor from '@monaco-editor/react'
-import * as monaco from 'monaco-editor'
+import type * as monaco from 'monaco-editor'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import EnterpriseTabs from './controls/tabs/EnterpriseTabs'
-import * as c3 from 'antlr4-c3'
-import { CharStream, CommonTokenStream, TerminalNode, ParseTree, ParserRuleContext } from 'antlr4ng'
-import { TableNameContext } from './generated/lexer/SqlBase.g4/SqlBaseParser'
+import { CodeCompletionCore } from 'antlr4-c3'
+import { CharStream, CommonTokenStream, TerminalNode } from 'antlr4ng'
+import type { ParseTree, ParserRuleContext } from 'antlr4ng'
+import { TableNameContext, SqlBaseParser } from './generated/lexer/SqlBase.g4/SqlBaseParser'
 import { SqlBaseLexer } from './generated/lexer/SqlBase.g4/SqlBaseLexer'
-import { SqlBaseParser } from './generated/lexer/SqlBase.g4/SqlBaseParser'
 import SqlBaseErrorListener from './sql/SqlBaseErrorListener'
 import SqlBaseListenerImpl from './sql/SqlBaseListenerImpl'
 import StatementDescriptor from './sql/StatementDescriptor'
@@ -23,7 +23,6 @@ import Column from './schema/Column'
 import NamedQuery from './sql/NamedQuery'
 import { tokenMap } from './sql/TokenMap'
 import SubstitutionEditor from './SubstitutionEditor'
-import { format } from 'sql-formatter'
 
 const TRINO_SQL_LANGUAGE = 'trinosql'
 const TABS_HEIGHT = 64
@@ -93,6 +92,7 @@ class CustomTokenizerState implements monaco.languages.IState {
 
 class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorPaneState> {
     private editorRef: monaco.editor.IStandaloneCodeEditor | null = null
+    private monacoRef: typeof monaco | null = null
     private isRunningParse: boolean = false
     private updateCounter: number = 0
     private parseCancelToken: { cancel: boolean } = { cancel: false }
@@ -140,8 +140,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
     handleTabChange = (queryId: string) => {
         this.props.queries.setCurrentQuery(queryId)
-        if (this.editorRef) {
-            const model = monaco.editor.getModel(monaco.Uri.parse(`file:///${queryId}`))
+        if (this.editorRef && this.monacoRef) {
+            const model = this.monacoRef.editor.getModel(this.monacoRef.Uri.parse(`file:///${queryId}`))
             if (model) {
                 this.editorRef.setModel(model)
             }
@@ -155,16 +155,20 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
     handleTabCreate = () => {
         const newQuery = this.props.queries.addQuery(false, 'New query')
-        monaco.editor.createModel('', TRINO_SQL_LANGUAGE, monaco.Uri.parse(`file:///${newQuery.id}`))
+        if (this.monacoRef) {
+            this.monacoRef.editor.createModel('', TRINO_SQL_LANGUAGE, this.monacoRef.Uri.parse(`file:///${newQuery.id}`))
+        }
         this.props.queries.setCurrentQuery(newQuery.id)
         return newQuery.id
     }
 
     handleTabClose = (id: string) => {
         this.props.queries.deleteQuery(id)
-        const model = monaco.editor.getModel(monaco.Uri.parse(`file:///${id}`))
-        if (model) {
-            model.dispose()
+        if (this.monacoRef) {
+            const model = this.monacoRef.editor.getModel(this.monacoRef.Uri.parse(`file:///${id}`))
+            if (model) {
+                model.dispose()
+            }
         }
     }
 
@@ -347,7 +351,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             return false
         }
 
-        const core = new c3.CodeCompletionCore(parser)
+        const core = new CodeCompletionCore(parser)
         core.showDebugOutput = false // logging debug info from parser
 
         // create a set of rules that should be used for code completion
@@ -392,13 +396,14 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         replace: string,
         caretPosition: monaco.Position,
         startWordColumn: number,
-        endWordColumn: number
+        endWordColumn: number,
+        monacoInstance: typeof monaco
     ) {
         return {
             label: match,
-            kind: monaco.languages.CompletionItemKind.Keyword,
+            kind: monacoInstance.languages.CompletionItemKind.Keyword,
             insertText: replace,
-            insertTextRules: monaco.languages.CompletionItemInsertTextRule.None,
+            insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.None,
             // Use Monaco's preferred format for ranges
             range: {
                 startLineNumber: caretPosition.lineNumber,
@@ -447,7 +452,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                         displayName.toLowerCase() + ' ',
                         caretPosition,
                         startWordColumn,
-                        startWordColumn + displayName.length
+                        startWordColumn + displayName.length,
+                        monaco
                     )
                 )
                 if (displayName.toLowerCase() == 'select') {
@@ -457,7 +463,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             'select * from ',
                             caretPosition,
                             startWordColumn,
-                            endWordLineOffset
+                            endWordLineOffset,
+                            monaco
                         )
                     )
                 }
@@ -468,7 +475,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             'limit 5',
                             caretPosition,
                             startWordColumn,
-                            endWordLineOffset
+                            endWordLineOffset,
+                            monaco
                         )
                     )
                 }
@@ -479,7 +487,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             'with query as (select * from )',
                             caretPosition,
                             startWordColumn,
-                            endWordLineOffset
+                            endWordLineOffset,
+                            monaco
                         )
                     )
                 }
@@ -638,6 +647,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     }
 
     editorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
+        this.monacoRef = monaco
         this.setEditorRef(editor)
 
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
@@ -786,7 +796,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     }
 
     // Format the entire SQL query
-    formatSql = () => {
+    formatSql = async () => {
         if (this.editorRef) {
             const currentValue = this.editorRef.getValue()
 
@@ -796,6 +806,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                     uppercase: true,
                     linesBetweenQueries: 2,
                 }
+                const { format } = await import('sql-formatter')
                 const formattedSql = format(currentValue, config)
 
                 // Replace the entire editor content with the formatted SQL
@@ -810,12 +821,12 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     }
 
     // Format only the selected text
-    formatSelection = () => {
+    formatSelection = async () => {
         if (this.editorRef) {
             const selection = this.editorRef.getSelection()
             if (!selection || selection.isEmpty()) {
                 // No selection, format the entire query
-                this.formatSql()
+                await this.formatSql()
                 return
             }
 
@@ -829,6 +840,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                         uppercase: true,
                         linesBetweenQueries: 2,
                     }
+                    const { format } = await import('sql-formatter')
                     const formattedSql = format(selectedText, config)
 
                     // Replace just the selected part
