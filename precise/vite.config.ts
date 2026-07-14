@@ -8,6 +8,7 @@ const staticExternals = new Set([
     'react-dom/server',
     'react/jsx-runtime',
     'react/jsx-dev-runtime',
+    'react-is',
     'monaco-editor',
     '@monaco-editor/react',
 ])
