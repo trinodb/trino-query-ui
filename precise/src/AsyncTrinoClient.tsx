@@ -31,6 +31,7 @@ class TrinoQueryRunner {
 
     // Authentication: custom headers to include in every Trino request (e.g. Authorization, X-Trino-User)
     private requestHeaders: Record<string, string> = {}
+    private abortController: AbortController | null = null
 
     // Hard cap for the cached result set. If the next chunk exceeds this, stop.
     private static readonly MAX_RESULT_SET_BYTES = 5 * 1024 * 1024
@@ -180,6 +181,7 @@ class TrinoQueryRunner {
         if (this.isRunning && !this.cancellationToken) {
             this.cancellationToken = 'cancelling'
             this.cancellationReason = cancellationReason
+            this.abortController?.abort(cancellationReason || 'Query was cancelled')
         }
     }
 
@@ -213,8 +215,9 @@ class TrinoQueryRunner {
     }
 
     private async executeStartQuery(statement: string) {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort('Timeout: Trino is not responding'), 15000)
+        this.abortController = new AbortController()
+        const currentController = this.abortController
+        const timeoutId = setTimeout(() => currentController.abort('Timeout: Trino is not responding'), 15000)
 
         // Merge authentication headers with catalog/schema headers
         const headers: Record<string, string> = { ...this.resolveHeaders() }
@@ -232,7 +235,7 @@ class TrinoQueryRunner {
                 method: 'POST',
                 headers,
                 body: statement,
-                signal: controller.signal,
+                signal: currentController.signal,
                 credentials: 'include',
             })
 
@@ -301,6 +304,7 @@ class TrinoQueryRunner {
                 method: 'GET',
                 headers: this.resolveHeaders(),
                 credentials: 'include',
+                signal: this.abortController?.signal,
             })
 
             if (!response.ok) {
@@ -341,7 +345,9 @@ class TrinoQueryRunner {
         let errorMessage = 'An unexpected error occurred'
 
         if (error instanceof DOMException && error.name === 'AbortError') {
-            errorMessage = 'Query timed out - Trino server took too long to respond'
+            errorMessage = this.cancellationToken
+                ? (this.cancellationReason || 'Query was cancelled')
+                : 'Query timed out - Trino server took too long to respond'
         } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             if (navigator.onLine === false) {
                 errorMessage = 'You appear to be offline. Please check your internet connection.'

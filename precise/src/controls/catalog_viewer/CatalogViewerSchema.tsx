@@ -22,6 +22,7 @@ interface SchemaProps {
         catalogName?: string,
         schemaName?: string
     ) => void
+    onToggle?: (path: string) => void
 }
 
 const CatalogViewerSchema: React.FC<SchemaProps> = ({
@@ -32,6 +33,7 @@ const CatalogViewerSchema: React.FC<SchemaProps> = ({
     isLoading,
     hasMatchingChildren,
     onGenerateQuery,
+    onToggle,
 }) => {
     const schemaPath = buildPath.schema(catalogName, schema.getName())
 
@@ -60,6 +62,15 @@ const CatalogViewerSchema: React.FC<SchemaProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
+                        cursor: 'pointer',
+                        width: '100%',
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onToggle?.(schemaPath)
+                        if (onGenerateQuery) {
+                            onGenerateQuery('SET_SCHEMA', null, catalogName, schema.getName())
+                        }
                     }}
                 >
                     <Typography fontSize="small">{schema.getName()}</Typography>
@@ -98,6 +109,7 @@ const CatalogViewerSchema: React.FC<SchemaProps> = ({
                             isLoading={isLoading}
                             hasMatchingChildren={hasMatchingChildren}
                             onGenerateQuery={onGenerateQuery}
+                            onToggle={onToggle}
                         />
                     )
                 })}

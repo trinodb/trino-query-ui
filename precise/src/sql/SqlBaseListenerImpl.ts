@@ -51,21 +51,23 @@ class SqlBaseListenerImpl extends SqlBaseListener {
             this.specialHighlights.push(currentQualifiedName)
             const name = ctx.getText()
 
-            // Handle table references considering current catalog and schema
-            let tableRef: TableReference
-            if (TableReference.isFullyQualified(name)) {
-                tableRef = TableReference.fromFullyQualified(name)
-            } else if (this.currentCatalog && this.currentSchema) {
-                tableRef = new TableReference(this.currentCatalog, this.currentSchema, name)
-            } else {
-                // If we don't have enough context and it's not fully qualified,
-                // we'll treat it as is and let SchemaProvider handle it
-                tableRef = TableReference.fromFullyQualified(name)
+            // Resolve table reference from parts
+            const parts = name.split('.')
+            let tableRef: TableReference | null = null
+
+            if (parts.length === 3) {
+                tableRef = new TableReference(parts[0], parts[1], parts[2])
+            } else if (parts.length === 2 && this.currentCatalog) {
+                tableRef = new TableReference(this.currentCatalog, parts[0], parts[1])
+            } else if (parts.length === 1 && this.currentCatalog && this.currentSchema) {
+                tableRef = new TableReference(this.currentCatalog, this.currentSchema, parts[0])
             }
 
             this.currentTableNameContext = name
-            // Try to populate the cache
-            SchemaProvider.getTableIfCached(tableRef)
+            if (tableRef) {
+                // Try to populate the cache
+                SchemaProvider.getTableIfCached(tableRef)
+            }
             this.tableColumns.set(name, this.currentColumns)
             this.currentColumns = []
         }

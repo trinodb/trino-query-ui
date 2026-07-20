@@ -547,13 +547,15 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 (caretPosition.lineNumber > statement.start.line && caretPosition.lineNumber < statement.end.line)
             ) {
 
-                const tableName: string = statement.tableName
+                const tableName = statement.tableName
+                const parts = tableName.split('.')
                 let tableReference: TableReference | undefined
-                if (TableReference.isFullyQualified(tableName)) {
-                    tableReference = TableReference.fromFullyQualified(tableName)
-                } else if (this.props.catalog && this.props.schema) {
-                    // Use current catalog and schema from props
-                    tableReference = new TableReference(this.props.catalog, this.props.schema, tableName)
+                if (parts.length === 3) {
+                    tableReference = new TableReference(parts[0], parts[1], parts[2])
+                } else if (parts.length === 2 && this.props.catalog) {
+                    tableReference = new TableReference(this.props.catalog, parts[0], parts[1])
+                } else if (parts.length === 1 && this.props.catalog && this.props.schema) {
+                    tableReference = new TableReference(this.props.catalog, this.props.schema, parts[0])
                 }
 
                 if (tableReference) {

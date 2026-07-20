@@ -44,13 +44,14 @@ class SpecialHighlight {
         // Get the table reference with context awareness
         let tableReference: TableReference | undefined
         const tableName = this.ast.getText()
+        const parts = tableName.split('.')
 
-        if (TableReference.isFullyQualified(tableName)) {
-            // If fully qualified, use that directly
-            tableReference = TableReference.fromFullyQualified(tableName)
-        } else if (this.catalog && this.schema) {
-            // If not fully qualified but we have catalog and schema context, use those
-            tableReference = new TableReference(this.catalog, this.schema, tableName)
+        if (parts.length === 3) {
+            tableReference = new TableReference(parts[0], parts[1], parts[2])
+        } else if (parts.length === 2 && this.catalog) {
+            tableReference = new TableReference(this.catalog, parts[0], parts[1])
+        } else if (parts.length === 1 && this.catalog && this.schema) {
+            tableReference = new TableReference(this.catalog, this.schema, parts[0])
         }
 
         let hoverMessage = ''
