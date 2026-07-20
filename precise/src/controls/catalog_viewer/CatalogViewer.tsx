@@ -22,7 +22,7 @@ import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
 import CatalogViewerSchema from './CatalogViewerSchema'
 import SchemaProvider from './../../sql/SchemaProvider'
 import Catalog from './../../schema/Catalog'
-import TableReference from '../../schema/TableReference'
+import TableReference, { quoteIdentifier } from '../../schema/TableReference'
 import { ViewerStateManager, buildPath } from './ViewerState'
 
 interface CatalogViewerProps {
@@ -141,9 +141,9 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
             SchemaProvider.getTableWithCache(tableRef, (table: any) => {
                 const columns = table
                     .getColumns()
-                    .map((col: { getName: () => string }) => col.getName())
+                    .map((col: { getName: () => string }) => quoteIdentifier(col.getName()))
                     .join(',\n    ')
-                const query = `SELECT\n    ${columns}\nFROM "${tableRef.catalogName}"."${tableRef.schemaName}"."${tableRef.tableName}"\nlimit 100`
+                const query = `SELECT\n    ${columns}\nFROM ${quoteIdentifier(tableRef.catalogName)}.${quoteIdentifier(tableRef.schemaName)}.${quoteIdentifier(tableRef.tableName)}\nlimit 100`
                 onAppendQuery(query, tableRef.catalogName, tableRef.schemaName)
             })
         } else if (queryType === 'SET_SCHEMA' && catalogName && schemaName) {
@@ -307,7 +307,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                                         icon: StorageOutlinedIcon,
                                     }}
                                     label={
-                                        <Box 
+                                        <Box
                                             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', width: '100%' }}
                                             onClick={(e) => {
                                                 e.stopPropagation()

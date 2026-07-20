@@ -4,7 +4,7 @@ import Column from '../schema/Column'
 import Catalog from './../schema/Catalog'
 import Schema from './../schema/Schema'
 import Table from './../schema/Table'
-import TableReference from './../schema/TableReference'
+import TableReference, { quoteIdentifier } from './../schema/TableReference'
 
 class SchemaProvider {
     // error message from last catalog fetch so that it can be displayed to the user
@@ -12,6 +12,8 @@ class SchemaProvider {
     static catalogs: Map<string, Catalog> = new Map<string, Catalog>()
     // map of fully qualified table name to tables
     static tables: Map<string, Table> = new Map<string, Table>()
+    // map of in-progress table name fetches to callbacks
+    static pendingTableFetches: Map<string, Array<(table: Table) => void>> = new Map()
 
     private static createRunner(): TrinoQueryRunner {
         return TrinoClientProvider.createClient()
@@ -25,7 +27,9 @@ class SchemaProvider {
                 for (const [schemaName, schema] of value.getSchemas()) {
                     if (schemaName === schemaFilter || !schemaFilter) {
                         for (const [tableName, table] of schema.getTables()) {
-                            tableNames.push(key + '.' + schemaName + '.' + tableName)
+                            tableNames.push(
+                                quoteIdentifier(key) + '.' + quoteIdentifier(schemaName) + '.' + quoteIdentifier(tableName)
+                            )
                         }
                     }
                 }
@@ -36,9 +40,9 @@ class SchemaProvider {
 
     static isTableCached(tableRef: TableReference) {
         if (this.tables.has(tableRef.fullyQualified)) {
-            // check for columns
+            // check for columns or error
             const table = this.tables.get(tableRef.fullyQualified)
-            if (table && table.getColumns().length > 0) {
+            if (table && (table.getColumns().length > 0 || table.getError() !== '')) {
                 return true
             }
         }
@@ -74,16 +78,22 @@ class SchemaProvider {
         // refresh catalogs
         this.createRunner()
             .SetAllResultsCallback((results: any[], isError: boolean) => {
+                if (isError) return
                 for (let i = 0; i < results.length; i++) {
-                    const catalog: Catalog = new Catalog(results[i][0], results[i][1])
-                    if (!this.catalogs.has(catalog.getName())) {
-                        this.catalogs.set(catalog.getName(), catalog)
+                    const catalogName = results[i][0]
+                    const catalogType = results[i][1]
+
+                    let catalog = this.catalogs.get(catalogName)
+                    if (!catalog) {
+                        catalog = new Catalog(catalogName, catalogType)
+                        this.catalogs.set(catalogName, catalog)
                     }
                     this.lastSchemaFetchError = undefined
 
                     // refresh tables and schemas for this catalog
                     this.createRunner()
                         .SetAllResultsCallback((results: any[], isError: boolean) => {
+                            if (isError) return
                             for (let i = 0; i < results.length; i++) {
                                 const schemaName = results[i][0]
                                 const tableName = results[i][1]
@@ -110,7 +120,7 @@ class SchemaProvider {
                         })
                         .StartQuery(
                             'SELECT table_schema, table_name, table_type FROM ' +
-                            catalog.getName() +
+                            quoteIdentifier(catalog.getName()) +
                             '.information_schema.tables'
                         )
                 }
@@ -124,10 +134,43 @@ class SchemaProvider {
 
     /* callback returns a table type */
     static getTableRefreshCache(tableRef: TableReference, callback: (table: Table) => void) {
+        const key = tableRef.fullyQualified
+        if (this.pendingTableFetches.has(key)) {
+            if (callback) {
+                this.pendingTableFetches.get(key)?.push(callback)
+            }
+            return
+        }
+
+        const callbacks = callback ? [callback] : []
+        this.pendingTableFetches.set(key, callbacks)
+
+        const resolveCallbacks = (table: Table) => {
+            const list = this.pendingTableFetches.get(key)
+            this.pendingTableFetches.delete(key)
+            if (list) {
+                list.forEach((cb) => cb(table))
+            }
+        }
+
+        // Guard so the DESCRIBE fallback is dispatched at most once even when both
+        // the results-callback error branch and the error-message callback fire.
+        let fallbackStarted = false
+        const startFallback = () => {
+            if (fallbackStarted) return
+            fallbackStarted = true
+            this.fallbackToDescribe(tableRef, resolveCallbacks)
+        }
+
         // First try to load all tables in the schema at once
         const query = this.createRunner()
         query
-            .SetAllResultsCallback((results: any[]) => {
+            .SetAllResultsCallback((results: any[], isError: boolean) => {
+                if (isError) {
+                    // Ensure pending callbacks are always resolved by falling back to DESCRIBE.
+                    startFallback()
+                    return
+                }
                 // Create a temporary map to hold all tables in this schema
                 const schemaTables = new Map<string, Table>()
 
@@ -162,17 +205,15 @@ class SchemaProvider {
                 // If we found the requested table, use it
                 const requestedTable = schemaTables.get(tableRef.tableName)
                 if (requestedTable) {
-                    callback(requestedTable)
+                    resolveCallbacks(requestedTable)
                 } else {
                     // Fall back to DESCRIBE for this specific table
-                    this.fallbackToDescribe(tableRef, callback)
+                    startFallback()
                 }
             })
-            .SetErrorMessageCallback((error: string) => {
-                console.log('Error fetching table info:', error)
-
+            .SetErrorMessageCallback(() => {
                 // If information_schema query fails, fall back to DESCRIBE
-                this.fallbackToDescribe(tableRef, callback)
+                startFallback()
             })
 
         // Query information_schema for all columns in this schema
@@ -184,39 +225,61 @@ class SchemaProvider {
                 column_name,
                 data_type,
                 comment
-            FROM ${tableRef.catalogName}.information_schema.columns 
+            FROM ${quoteIdentifier(tableRef.catalogName)}.information_schema.columns 
             WHERE table_schema = '${tableRef.schemaName}'
         `)
     }
 
     private static fallbackToDescribe(tableRef: TableReference, callback: (table: Table) => void) {
-        const fallbackQuery = this.createRunner()
-        fallbackQuery
-            .SetAllResultsCallback((results: any[]) => {
-                const table = new Table(tableRef.tableName)
-                const columns = table.getColumns()
-                for (let i = 0; i < results.length; i++) {
-                    columns.push(new Column(results[i][0], results[i][1], results[i][2], results[i][3]))
-                }
-                this.tables.set(tableRef.fullyQualified, table)
+        // Guard so that the callback fires exactly once even if both callbacks are invoked.
+        let resolved = false
+        const resolveOnce = (table: Table) => {
+            if (resolved) return
+            resolved = true
+            // Always cache in the flat table map (prevents re-fetching)
+            this.tables.set(tableRef.fullyQualified, table)
 
+            // Only add *successful* tables to the Schema (catalog viewer tree).
+            // Error tables (e.g. from partial typing) must NOT pollute the tree.
+            if (!table.getError()) {
                 const catalog = tableRef.getCatalog()
                 const schema = tableRef.getSchema()
                 if (catalog && schema) {
                     schema.addTable(table)
                 }
+            }
 
-                if (callback) {
-                    callback(table)
+            if (callback) {
+                callback(table)
+            }
+        }
+
+        const fallbackQuery = this.createRunner()
+        fallbackQuery
+            .SetAllResultsCallback((results: any[], isError: boolean) => {
+                if (isError) {
+                    // Ensure the pending fetch is always resolved. A subsequent
+                    // error-message callback with a more descriptive message (if any)
+                    // is a no-op thanks to `resolveOnce`.
+                    const table = new Table(tableRef.tableName)
+                    table.setError('Query failed')
+                    resolveOnce(table)
+                    return
                 }
+                const table = new Table(tableRef.tableName)
+                const columns = table.getColumns()
+                for (let i = 0; i < results.length; i++) {
+                    columns.push(new Column(results[i][0], results[i][1], results[i][2], results[i][3]))
+                }
+                resolveOnce(table)
             })
             .SetErrorMessageCallback((error: string) => {
                 const table = new Table(tableRef.tableName)
                 table.setError(error)
-                callback(table)
+                resolveOnce(table)
             })
 
-        fallbackQuery.StartQuery(`DESCRIBE ${tableRef.fullyQualified}`)
+        fallbackQuery.StartQuery(`DESCRIBE ${quoteIdentifier(tableRef.catalogName)}.${quoteIdentifier(tableRef.schemaName)}.${quoteIdentifier(tableRef.tableName)}`)
     }
 }
 
