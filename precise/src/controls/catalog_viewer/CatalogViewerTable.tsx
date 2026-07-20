@@ -18,6 +18,7 @@ interface CatalogViewerTableProps {
     isLoading: boolean
     hasMatchingChildren: (path: string) => boolean
     onGenerateQuery?: (queryType: string, tableRef: TableReference) => void
+    onToggle?: (path: string) => void
 }
 
 const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
@@ -27,6 +28,7 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     isVisible,
     isLoading,
     onGenerateQuery,
+    onToggle,
 }) => {
     const [table, setTable] = useState<Table>(() => new Table(tableRef.tableName))
 
@@ -69,6 +71,12 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
+                        cursor: 'pointer',
+                        width: '100%',
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onToggle?.(tablePath)
                     }}
                 >
                     <Typography fontSize="small">{table.getName()}</Typography>

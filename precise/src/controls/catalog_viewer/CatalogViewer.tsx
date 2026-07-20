@@ -143,7 +143,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                     .getColumns()
                     .map((col: { getName: () => string }) => col.getName())
                     .join(',\n    ')
-                const query = `SELECT\n    ${columns}\nFROM ${tableRef.catalogName}.${tableRef.schemaName}.${tableRef.tableName}\nlimit 100`
+                const query = `SELECT\n    ${columns}\nFROM "${tableRef.catalogName}"."${tableRef.schemaName}"."${tableRef.tableName}"\nlimit 100`
                 onAppendQuery(query, tableRef.catalogName, tableRef.schemaName)
             })
         } else if (queryType === 'SET_SCHEMA' && catalogName && schemaName) {
@@ -273,6 +273,13 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                 }}
             >
                 <SimpleTreeView
+                    expandedItems={Array.from(expandedNodes)}
+                    onExpandedItemsChange={(event, itemIds) => {
+                        setExpandedNodes(new Set(itemIds))
+                        if (viewerState.current) {
+                            viewerState.current.userExpanded = new Set(itemIds)
+                        }
+                    }}
                     sx={{
                         '& .MuiTreeItem-content': {
                             minHeight: 24,
@@ -280,9 +287,6 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                             my: 0,
                             gap: 0.5,
                         },
-                    }}
-                    onItemExpansionToggle={(_, itemId) => {
-                        handleToggle(itemId)
                     }}
                 >
                     {Array.from(catalogs.values())
@@ -303,7 +307,16 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                                         icon: StorageOutlinedIcon,
                                     }}
                                     label={
-                                        <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <Box 
+                                            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', width: '100%' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleToggle(catalogPath)
+                                                if (onGenerateQuery) {
+                                                    onGenerateQuery('', catalogName, '')
+                                                }
+                                            }}
+                                        >
                                             <Typography fontSize="small">{catalogName}</Typography>
                                             {catalog.getType() === 'system' && (
                                                 <Chip size="small" label="system catalog" />
@@ -352,6 +365,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                                                         isLoading={isLoading}
                                                         hasMatchingChildren={hasMatchingChildren}
                                                         onGenerateQuery={handleGenerateQuery}
+                                                        onToggle={handleToggle}
                                                     />
                                                 )
                                             })}
