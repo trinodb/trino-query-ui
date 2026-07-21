@@ -177,12 +177,55 @@ class TrinoQueryRunner {
         this.setAllResults(rows, error)
     }
 
-    CancelQuery(cancellationReason: string) {
-        if (this.isRunning && !this.cancellationToken) {
-            this.cancellationToken = 'cancelling'
-            this.cancellationReason = cancellationReason
-            this.abortController?.abort(cancellationReason || 'Query was cancelled')
+    IsRunning(): boolean {
+        return this.isRunning
+    }
+
+    CancelQuery(cancellationReason: string = 'Query was cancelled') {
+        if (!this.isRunning && !this.cancellationToken) {
+            return
         }
+
+        const reason = cancellationReason || 'Query was cancelled'
+        this.cancellationReason = reason
+        this.cancellationToken = 'cancelling'
+
+        const cancelledState = {
+            ...this.state,
+            stats: {
+                ...(this.state?.stats || {}),
+                state: 'CANCELLED',
+            },
+        }
+
+        this.state = cancelledState
+        this.setStatus(cancelledState)
+        this.setErrorMessage(reason)
+
+        const nextUri = this.state?.nextUri
+        if (nextUri) {
+            const cancelPath = nextUri.replace(/^https?:\/\/[^/]+/, '')
+            const cancelUrl = this.baseUrl ? `${this.baseUrl}${cancelPath}` : cancelPath
+            fetch(cancelUrl, {
+                method: 'DELETE',
+                headers: this.resolveHeaders(),
+                credentials: 'include',
+            }).catch((err) => {
+                console.warn('Error cancelling query on Trino backend:', err)
+            })
+        }
+
+        if (this.abortController) {
+            try {
+                this.abortController.abort(reason)
+            } catch {
+                // ignore abort errors
+            }
+            this.abortController = null
+        }
+
+        this.cancellationToken = null
+        this.HandleStopped()
     }
 
     StartQuery(statement: string, catalog?: string, schema?: string): TrinoQueryRunner {
@@ -342,12 +385,15 @@ class TrinoQueryRunner {
     }
 
     private handleFetchError(error: unknown) {
+        if (this.cancellationReason || (error instanceof Error && (error.name === 'AbortError' || error.message?.includes('aborted')))) {
+            this.setErrorMessage(this.cancellationReason || 'Query was cancelled')
+            return
+        }
+
         let errorMessage = 'An unexpected error occurred'
 
         if (error instanceof DOMException && error.name === 'AbortError') {
-            errorMessage = this.cancellationToken
-                ? (this.cancellationReason || 'Query was cancelled')
-                : 'Query timed out - Trino server took too long to respond'
+            errorMessage = 'Query timed out - Trino server took too long to respond'
         } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             if (navigator.onLine === false) {
                 errorMessage = 'You appear to be offline. Please check your internet connection.'

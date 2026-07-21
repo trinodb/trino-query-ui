@@ -3,10 +3,8 @@ import { Box, Divider, IconButton, Stack, TextField, Toolbar, Typography } from 
 import type { TextFieldProps } from '@mui/material/TextField'
 import type { TypographyProps } from '@mui/material/Typography'
 import MenuIcon from '@mui/icons-material/Menu'
-import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
-import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined'
-import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryEditorPane from './QueryEditorPane'
 import ResultSet from './ResultSet'
 import Queries from './schema/Queries'
@@ -31,12 +29,14 @@ interface QueryCellState {
     editorCollapsed: boolean
 }
 
+import { Theme } from '@mui/material/styles'
+
 interface QueryCellProps {
     queries: Queries
     drawerOpen: boolean
     height: number
     onDrawerToggle: () => void
-    theme?: string
+    theme?: 'dark' | 'light' | Theme | string
     baseUrl?: string
     requestHeaders?: Record<string, string>
     resultSetStore?: ResultSetStore
@@ -230,6 +230,12 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
     }
 
     Execute() {
+        if (this.queryRunner.IsRunning() || (this.state.runningQuery !== undefined && (this.state.response?.stats?.state === 'RUNNING' || this.state.response?.stats?.state === 'QUEUED'))) {
+            this.queryRunner.CancelQuery('Query was cancelled')
+            this.setState({ runningQuery: undefined })
+            return
+        }
+
         this.queryRunner.StartQuery(
             this.state.currentQuery.query,
             this.state.currentQuery.catalog,
@@ -309,7 +315,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
 
         return (
             <Box>
-                <Toolbar sx={{ pl: 1, pr: 0.25, py: 0 }} disableGutters>
+                <Toolbar sx={{ pl: 1, pr: 1, py: 0.5, gap: 1 }} disableGutters>
                     <IconButton
                         color="inherit"
                         title="Catalogs"
@@ -319,17 +325,10 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <IconButton
-                        color={!isQueryRunning ? 'success' : 'error'}
-                        title={!isQueryRunning ? 'Run query' : 'Stop query'}
-                        onClick={() => this.Execute()}
-                    >
-                        {!isQueryRunning ? <PlayCircleOutlinedIcon /> : <StopCircleOutlinedIcon />}
-                    </IconButton>
                     {this.renderEditableTextField('editingTitle', currentQuery.title, {
                         typographyProps: {
                             variant: 'h6',
-                            sx: { ml: 2 },
+                            sx: { ml: 1 },
                         },
                         textFieldProps: {
                             sx: { maxWidth: 200 },
@@ -392,8 +391,8 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                             })}
                         </Stack>
                     </Stack>
-                    <IconButton color="inherit" title="Collapse query" onClick={this.toggleQueryCollapse}>
-                        {this.state.editorCollapsed ? <UnfoldMoreIcon /> : <UnfoldLessIcon />}
+                    <IconButton color="inherit" title={this.state.editorCollapsed ? "Expand query" : "Collapse query"} onClick={this.toggleQueryCollapse}>
+                        {this.state.editorCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
                     </IconButton>
                 </Toolbar>
                 <Divider />
@@ -401,6 +400,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                     <QueryEditorPane
                         onSelectChange={() => { }}
                         onExecute={() => this.Execute()}
+                        isQueryRunning={isQueryRunning}
                         queries={this.props.queries}
                         catalog={currentQuery.catalog}
                         schema={currentQuery.schema}
