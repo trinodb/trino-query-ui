@@ -9,6 +9,7 @@ import {
     Grid,
     FormControlLabel,
     IconButton,
+    InputAdornment,
     LinearProgress,
     TextField,
     Typography,
@@ -17,7 +18,9 @@ import {
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined'
+import SearchIcon from '@mui/icons-material/Search'
+import ClearIcon from '@mui/icons-material/Clear'
+import StorageIcon from '@mui/icons-material/Storage'
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
 import CatalogViewerSchema from './CatalogViewerSchema'
 import SchemaProvider from './../../sql/SchemaProvider'
@@ -197,16 +200,50 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                 >
                     <TextField
                         label="Find objects"
-                        placeholder="Catalog, schema or table name..."
+                        placeholder="Catalog, schema or table..."
                         size="small"
                         variant="outlined"
-                        type="search"
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start" sx={{ mr: 0.25 }}>
+                                        <SearchIcon sx={{ fontSize: '1rem' }} color="action" />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: filterText ? (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            aria-label="clear search"
+                                            onClick={() => setFilterText('')}
+                                            edge="end"
+                                            sx={{ p: 0.25 }}
+                                        >
+                                            <ClearIcon sx={{ fontSize: '0.9rem' }} color="action" />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null,
+                            },
+                        }}
                         sx={{
                             flex: 1,
-                            mr: 0,
-                            '& .MuiInputBase-input': { fontSize: '0.6rem' },
-                            '& .MuiInputBase-input::placeholder': { fontSize: '0.6rem' },
-                            '& .MuiInputLabel-root': { fontSize: '0.6rem' },
+                            mr: 0.5,
+                            '& .MuiInputBase-input': {
+                                fontSize: '0.8rem',
+                                py: 1,
+                            },
+                            '& .MuiInputBase-input::placeholder': {
+                                fontSize: '0.72rem',
+                                letterSpacing: '-0.015em',
+                                opacity: 0.75,
+                                textOverflow: 'clip',
+                            },
+                            '& .MuiInputLabel-root': {
+                                fontSize: '0.8rem',
+                            },
+                            '& input::-webkit-search-cancel-button': {
+                                display: 'none',
+                            },
                         }}
                         value={filterText}
                         onChange={(e) => setFilterText(e.target.value)}
@@ -222,9 +259,6 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                 {enableSearchColumns && (
                     <Box
                         sx={{
-                            '& .MuiInputBase-input': { fontSize: '0.6rem' },
-                            '& .MuiInputBase-input::placeholder': { fontSize: '0.6rem' },
-                            '& .MuiInputLabel-root': { fontSize: '0.6rem' },
                             width: '100%',
                             px: 1,
                         }}
@@ -241,13 +275,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                             }
                             label={
                                 <Grid container alignItems="center" columnGap={1}>
-                                    <Typography
-                                        sx={{
-                                            px: 0.1,
-                                            pt: 0.1,
-                                            fontSize: '0.5rem',
-                                        }}
-                                    >
+                                    <Typography variant="caption" sx={{ px: 0.1, pt: 0.1 }}>
                                         Search columns
                                     </Typography>
                                     {isLoadingColumns && <CircularProgress size={22} />}
@@ -304,7 +332,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                                     key={catalogPath}
                                     itemId={catalogPath}
                                     slots={{
-                                        icon: StorageOutlinedIcon,
+                                        icon: StorageIcon,
                                     }}
                                     label={
                                         <Box

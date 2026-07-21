@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Button, Tooltip } from '@mui/material'
-import CopyAllOutlinedIcon from '@mui/icons-material/CopyAllOutlined'
-import DoneOutlinedIcon from '@mui/icons-material/DoneOutlined'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import DoneIcon from '@mui/icons-material/Done'
 
 interface CopyLinkProps {
     copy: () => void
@@ -22,12 +22,12 @@ const CopyLink: React.FC<CopyLinkProps> = ({ copy }) => {
                 variant={copied ? 'contained' : 'outlined'}
                 color={copied ? 'success' : 'primary'}
                 size="small"
-                sx={{ fontSize: '0.5rem' }}
+                sx={(theme) => ({ borderRadius: `${theme.shape.borderRadius}px`, textTransform: 'none' })}
                 startIcon={
                     copied ? (
-                        <DoneOutlinedIcon sx={{ fontSize: '0.5rem' }} />
+                        <DoneIcon fontSize="small" />
                     ) : (
-                        <CopyAllOutlinedIcon sx={{ fontSize: '0.5rem' }} />
+                        <ContentCopyIcon fontSize="small" />
                     )
                 }
                 onClick={handleCopy}

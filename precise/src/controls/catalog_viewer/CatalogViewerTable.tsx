@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Alert, Box, IconButton, Typography } from '@mui/material'
 import { TreeItem } from '@mui/x-tree-view'
 import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined'
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
-import TableRowsOutlined from '@mui/icons-material/TableRowsOutlined'
+import SearchIcon from '@mui/icons-material/Search'
+import TableRowsIcon from '@mui/icons-material/TableRows'
 import Table from '../../schema/Table'
 import SchemaProvider from '../../sql/SchemaProvider'
 import TableReference from '../../schema/TableReference'
@@ -63,7 +63,7 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
             key={tablePath}
             itemId={tablePath}
             slots={{
-                icon: !table.isLoading() ? TableRowsOutlined : HourglassEmptyOutlinedIcon,
+                icon: !table.isLoading() ? TableRowsIcon : HourglassEmptyOutlinedIcon,
             }}
             label={
                 <Box
@@ -88,7 +88,7 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
                         onClick={handleGenerateQuery}
                         disabled={isLoading}
                     >
-                        <SearchOutlinedIcon sx={{ fontSize: 14 }} />
+                        <SearchIcon sx={{ fontSize: 14 }} />
                     </IconButton>
                 </Box>
             }

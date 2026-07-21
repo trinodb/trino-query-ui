@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button, Tooltip } from '@mui/material'
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
+import GetAppIcon from '@mui/icons-material/GetApp'
 
 interface DownloadCsvButtonProps {
     download: () => void
@@ -13,8 +13,8 @@ const DownloadCsvButton: React.FC<DownloadCsvButtonProps> = ({ download }) => {
                 variant="outlined"
                 color="primary"
                 size="small"
-                sx={{ fontSize: '0.5rem' }}
-                startIcon={<DownloadOutlinedIcon sx={{ fontSize: '0.5rem' }} />}
+                sx={(theme) => ({ borderRadius: `${theme.shape.borderRadius}px`, textTransform: 'none' })}
+                startIcon={<GetAppIcon fontSize="small" />}
                 onClick={download}
             >
                 CSV

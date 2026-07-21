@@ -1,8 +1,11 @@
 import React from 'react'
-import { Box, Stack, Tooltip, IconButton } from '@mui/material'
+import { Box, Button, Divider, Stack, Tooltip, IconButton } from '@mui/material'
+import { alpha, Theme } from '@mui/material/styles'
 import CodeIcon from '@mui/icons-material/Code'
 import Maximize from '@mui/icons-material/Maximize'
 import Minimize from '@mui/icons-material/Minimize'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import StopIcon from '@mui/icons-material/Stop'
 import Editor from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
 import Queries from './schema/Queries'
@@ -33,9 +36,10 @@ interface QueryEditorPaneProps {
     maxHeight: number
     onSelectChange: (selectedText: string) => void
     onExecute: () => void
+    isQueryRunning?: boolean
     catalog?: string
     schema?: string
-    theme?: string
+    theme?: 'dark' | 'light' | Theme | string
 }
 
 interface QueryEditorPaneState {
@@ -893,17 +897,43 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                         sx={(theme) => ({
                             position: 'absolute',
                             alignItems: 'center',
-                            background: theme.palette.background.default,
+                            background: theme.palette.mode === 'dark' ? 'rgba(43, 48, 51, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                            backdropFilter: 'blur(8px)',
                             border: 1,
                             borderColor: theme.palette.divider,
-                            boxShadow: 1,
-                            px: 0.5,
-                            top: 0,
-                            right: 15,
+                            borderRadius: '8px',
+                            boxShadow: '0px 4px 12px rgba(0,0,0,0.12)',
+                            px: 1,
+                            py: 0.5,
+                            top: 10,
+                            right: 44,
                             zIndex: 1000,
                         })}
                     >
-                        <Tooltip title="Format SQL (Alt+Shift+F)">
+                        <Tooltip title={!this.props.isQueryRunning ? "Run Query (Ctrl + Enter)" : "Stop Query"}>
+                            <Button
+                                variant="contained"
+                                color={!this.props.isQueryRunning ? 'primary' : 'error'}
+                                size="small"
+                                onClick={this.props.onExecute}
+                                startIcon={!this.props.isQueryRunning ? <PlayArrowIcon sx={{ fontSize: '1.1rem' }} /> : <StopIcon sx={{ fontSize: '1.1rem' }} />}
+                                sx={(theme) => ({
+                                    px: 2,
+                                    py: 0.5,
+                                    fontWeight: 600,
+                                    borderRadius: `${theme.shape.borderRadius}px`,
+                                    textTransform: 'none',
+                                    boxShadow: !this.props.isQueryRunning ? `0px 2px 4px ${alpha(theme.palette.primary.main, 0.25)}` : 'none',
+                                    '&:hover': {
+                                        boxShadow: !this.props.isQueryRunning ? `0px 4px 8px ${alpha(theme.palette.primary.main, 0.35)}` : 'none',
+                                    },
+                                })}
+                            >
+                                {!this.props.isQueryRunning ? 'Run Query' : 'Stop'}
+                            </Button>
+                        </Tooltip>
+                        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+                        <Tooltip title="Format SQL (Alt + Shift + F)">
                             <IconButton size="small" onClick={this.formatSql}>
                                 <CodeIcon sx={{ fontSize: '1.2rem' }} />
                             </IconButton>
@@ -927,7 +957,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             height={'100%'}
                             width={width}
                             language="trinosql"
-                            theme={this.props.theme === 'dark' ? 'vs-dark' : 'vss'}
+                            theme={(typeof this.props.theme === 'object' ? this.props.theme?.palette?.mode === 'dark' : this.props.theme === 'dark') ? 'vs-dark' : 'vs'}
                             value={currentQuery?.query || ''}
                             options={{
                                 automaticLayout: true,

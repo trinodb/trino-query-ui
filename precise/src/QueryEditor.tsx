@@ -13,9 +13,11 @@ import SchemaProvider from './sql/SchemaProvider'
 import { TrinoClientProvider } from './sql/TrinoClientProvider'
 import { ResultSetStore } from './utils/resultSetStore'
 
+import { Theme } from '@mui/material/styles'
+
 interface IQueryEditor {
     height: number
-    theme?: 'dark' | 'light'
+    theme?: 'dark' | 'light' | Theme
     enableCatalogSearchColumns?: boolean
     requestHeaders?: Record<string, string>
     resultSetStore?: ResultSetStore
@@ -29,7 +31,9 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
 }>(({ theme }) => ({
     flexGrow: 1,
     padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
+    width: '100%',
+    boxSizing: 'border-box',
+    transition: theme.transitions.create(['margin', 'width'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
     }),
@@ -38,11 +42,12 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })<{
         {
             props: ({ open }) => open,
             style: {
-                transition: theme.transitions.create('margin', {
+                width: `calc(100% - ${DRAWER_WIDTH}px)`,
+                marginLeft: `${DRAWER_WIDTH}px`,
+                transition: theme.transitions.create(['margin', 'width'], {
                     easing: theme.transitions.easing.easeOut,
                     duration: theme.transitions.duration.enteringScreen,
                 }),
-                marginLeft: `${DRAWER_WIDTH}px`,
             },
         },
     ],
@@ -108,7 +113,9 @@ export const QueryEditor = ({
     }, [requestHeaders])
 
     const muiThemeToUse = () => {
-        if (theme === 'dark') {
+        if (typeof theme === 'object' && theme !== null) {
+            return theme
+        } else if (theme === 'dark') {
             return darkTheme
         } else if (theme === 'light') {
             return lightTheme
@@ -180,6 +187,9 @@ export const QueryEditor = ({
                         position: 'relative',
                         overflow: 'hidden',
                         height: height,
+                        width: '100%',
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
                     }}
                 >
                     <AppBar color="transparent" open={drawerOpen} />

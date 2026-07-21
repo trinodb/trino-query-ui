@@ -414,12 +414,9 @@ class ResultSet extends React.Component<ResultSetProps> {
                                 {truncationMessage}
                             </Alert>
                         ) : null}
-                        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.8rem' }}>
-                            <Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
-                                {this.getRowCount()} rows:
-                            </Typography>
-                            <Typography variant="caption">
-                                <Link href={`/ui/query.html?${response.id}`}>{response.id}</Link>
+                        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', whiteSpace: 'nowrap', mr: 0.5 }}>
+                                {this.getRowCount()} rows
                             </Typography>
                             {columns && columns.length ? (
                                 response.stats && this.isFinishedFailedOrCancelled(response.stats.state) ? (

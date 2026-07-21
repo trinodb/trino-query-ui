@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, IconButton, Typography } from '@mui/material'
 import { TreeItem } from '@mui/x-tree-view'
-import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import Schema from '../../schema/Schema'
 import Table from '../../schema/Table'
@@ -54,7 +54,7 @@ const CatalogViewerSchema: React.FC<SchemaProps> = ({
             key={schemaPath}
             itemId={schemaPath}
             slots={{
-                icon: AccountTreeOutlinedIcon,
+                icon: AccountTreeIcon,
             }}
             label={
                 <Box
