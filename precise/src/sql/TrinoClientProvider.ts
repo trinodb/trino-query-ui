@@ -12,8 +12,12 @@ export class TrinoClientProvider {
     private constructor() { }
 
     static configure(config: TrinoClientConfig) {
-        TrinoClientProvider.baseUrl = config.baseUrl
-        TrinoClientProvider.requestHeaders = config.requestHeaders ?? {}
+        if (config.baseUrl !== undefined) {
+            TrinoClientProvider.baseUrl = config.baseUrl
+        }
+        if (config.requestHeaders && Object.keys(config.requestHeaders).length > 0) {
+            TrinoClientProvider.requestHeaders = config.requestHeaders
+        }
     }
 
     static getBaseUrl(): string | undefined {

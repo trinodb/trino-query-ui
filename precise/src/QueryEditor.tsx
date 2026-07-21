@@ -98,6 +98,15 @@ export const QueryEditor = ({
         requestHeaders,
     })
 
+    const catalogViewerKey = React.useMemo(() => {
+        if (!requestHeaders) return 'no-headers'
+        const entries = Object.entries(requestHeaders)
+            .filter(([, v]) => v !== undefined && v !== null && v !== '')
+            .map(([k]) => k.toLowerCase())
+            .sort()
+        return entries.length > 0 ? entries.join('|') : 'no-headers'
+    }, [requestHeaders])
+
     const muiThemeToUse = () => {
         if (theme === 'dark') {
             return darkTheme
@@ -203,6 +212,7 @@ export const QueryEditor = ({
                         }}
                     >
                         <CatalogViewer
+                            key={catalogViewerKey}
                             onGenerateQuery={setQueryContent}
                             onAppendQuery={appendQueryContent}
                             onDrawerToggle={() => setDrawerOpen(false)}
