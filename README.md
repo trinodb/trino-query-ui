@@ -67,6 +67,8 @@ The Query UI builds just like the existing UI in Trino.
 
 ### Building for integration
 
+Swap the `defineConfig` from debug to production in `vite.config.ts`
+
 ```shell
 cd precise
 npm install
@@ -87,6 +89,7 @@ Modify `$TRINO_HOME/core/trino-main/src/main/java/io/trino/server/ui/WebUiStatic
 Add `/query/` path. Note any path can be used:
 
 ```java
+    @ResourceSecurity(PUBLIC)
     @GET
     @Path("/query")
     public Response getQuery(@BeanParam ExternalUriInfo externalUriInfo)
@@ -119,12 +122,7 @@ Add `/query/` path. Note any path can be used:
             return Response.status(NOT_FOUND).build();
         }
 
-        URL resource = getClass().getResource(fullPath);
-        if (resource == null) {
-            return Response.status(NOT_FOUND).build();
-        }
-
-        return Response.ok(resource.openStream()).build();
+        return webUiResource(fullPath);
     }
 
     private static boolean isCanonical(String fullPath)
