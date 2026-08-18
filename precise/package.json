@@ -50,7 +50,7 @@
     "@emotion/styled": "^11.14.1",
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.2",
-    "@mui/material": "^7.3.2",
+    "@mui/material": "^9.3.1",
     "@mui/x-data-grid": "^8.14.0",
     "@mui/x-tree-view": "^8.13.1",
     "antlr4-c3": "^3.4.4",
