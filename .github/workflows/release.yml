@@ -18,25 +18,25 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - id: version
-        uses: EndBug/version-check@v2
+        uses: EndBug/version-check@v3
         with:
           file-name: ./precise/package.json
           diff-search: true
 
       - if: steps.version.outputs.changed == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
           generate_release_notes: true
 
       - if: steps.version.outputs.changed == 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24' # Use latest LTS version
           registry-url: https://registry.npmjs.org
