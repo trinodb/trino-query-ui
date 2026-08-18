@@ -9,4 +9,4 @@ The component can be embedded into any React application and configured to proxy
 requests to a local or remote Trino cluster.
 
 Find more details including using the component, screenshots, development and
-more in our [source code repository](https://github.com/simpligility/trino-query-ui).
+more in our [source code repository](https://github.com/trinodb/trino-query-ui).
