@@ -21,6 +21,7 @@ import Chip, { ChipProps } from '@mui/material/Chip'
 import ReactDOMServer from 'react-dom/server'
 import CopyLink from './utils/CopyLink'
 import ClearButton from './utils/ClearButton'
+import DownloadCsvButton from './utils/DownloadCsvButton'
 
 interface ResultSetProps {
     queryId: string | undefined
@@ -254,6 +255,39 @@ class ResultSet extends React.Component<ResultSetProps> {
         return tableText
     }
 
+    formatTableAsCsv(results: any[], columns: any[]): string {
+        if (!columns || columns.length === 0) {
+            return ''
+        }
+
+        const escapeCell = (value: any): string => {
+            if (value == null) return ''
+            const str = String(value)
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`
+            }
+            return str
+        }
+
+        const header = columns.map((column: any) => escapeCell(column.name)).join(',')
+        const rows = results
+            .flat()
+            .map((row: any[]) => row.map((cell: any) => escapeCell(cell)).join(','))
+        return [header, ...rows].join('\n')
+    }
+
+    downloadCsv() {
+        const { results, columns, queryId } = this.props
+        const csvContent = this.formatTableAsCsv(results, columns)
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${queryId ?? 'query'}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
     copy() {
         const { results, columns } = this.props
         const htmlContent = ReactDOMServer.renderToString(this.renderInnerTable(results, this.props.response, columns))
@@ -355,6 +389,7 @@ class ResultSet extends React.Component<ResultSetProps> {
                                     <>
                                         <ClearButton onClear={() => this.props.onClearResults(queryId)} />
                                         <CopyLink copy={() => this.copy()} />
+                                        <DownloadCsvButton download={() => this.downloadCsv()} />
                                     </>
                                 ) : null
                             ) : null}
