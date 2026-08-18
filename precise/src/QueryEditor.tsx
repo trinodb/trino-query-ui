@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { styled } from '@mui/material/styles'
 import { Box, Drawer, useMediaQuery } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
@@ -9,11 +9,13 @@ import { darkTheme, lightTheme } from './theme'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import CatalogViewer from './controls/catalog_viewer/CatalogViewer'
+import SchemaProvider from './sql/SchemaProvider'
 
 interface IQueryEditor {
     height: number
     theme?: 'dark' | 'light'
     enableCatalogSearchColumns?: boolean
+    requestHeaders?: Record<string, string>
 }
 
 const DRAWER_WIDTH = 260
@@ -71,13 +73,18 @@ const AppBar = styled(MuiAppBar, {
     ],
 }))
 
-export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQueryEditor) => {
+export const QueryEditor = ({ height, theme, enableCatalogSearchColumns, requestHeaders }: IQueryEditor) => {
     const [queries, setQueries] = useState<Queries>(() => new Queries())
     const [drawerOpen, setDrawerOpen] = useState<boolean>(true)
     const [queryRunning, setQueryRunning] = useState<boolean>(false)
     const [currentQuery, setCurrentQuery] = useState<QueryInfo>(queries.getCurrentQuery())
     const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
     const containerRef = useRef(null)
+
+    // Propagate request headers to SchemaProvider so catalog browsing is authenticated
+    useEffect(() => {
+        SchemaProvider.setRequestHeaders(requestHeaders ?? {})
+    }, [requestHeaders])
 
     const muiThemeToUse = () => {
         if (theme === 'dark') {
@@ -188,6 +195,7 @@ export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQuer
                         onAppendQuery={appendQueryContent}
                         onDrawerToggle={() => setDrawerOpen(false)}
                         enableSearchColumns={enableCatalogSearchColumns}
+                        requestHeaders={requestHeaders}
                     />
                 </Drawer>
 
@@ -198,6 +206,7 @@ export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQuer
                         height={height}
                         onDrawerToggle={() => setDrawerOpen(true)}
                         theme={theme}
+                        requestHeaders={requestHeaders}
                     />
                 </Main>
             </Box>

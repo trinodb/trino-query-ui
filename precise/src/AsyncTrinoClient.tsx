@@ -26,6 +26,9 @@ class TrinoQueryRunner {
     private trinoSchema: string | null = null
     private setHeadersCallback: (catalog: string | null, schema: string | null) => void = () => {}
 
+    // Authentication: custom headers to include in every Trino request (e.g. Authorization, X-Trino-User)
+    private requestHeaders: Record<string, string> = {}
+
     SetAllResultsCallback(setAllResults: (n: any[], error: boolean) => any): TrinoQueryRunner {
         this.setAllResults = setAllResults
         return this
@@ -45,6 +48,19 @@ class TrinoQueryRunner {
     SetHeadersCallback(callback: (catalog: string | null, schema: string | null) => void): TrinoQueryRunner {
         this.setHeadersCallback = callback
         return this
+    }
+
+    // Set custom headers to include in every Trino request (e.g. Authorization, X-Trino-User)
+    SetRequestHeaders(headers: Record<string, string>): TrinoQueryRunner {
+        this.requestHeaders = headers
+        return this
+    }
+
+    // Resolve headers; falls back to X-Trino-User: system if none provided
+    private resolveHeaders(): Record<string, string> {
+        return Object.keys(this.requestHeaders).length > 0
+            ? { ...this.requestHeaders }
+            : { 'X-Trino-User': 'system' }
     }
 
     // Add getters for catalog and schema
@@ -71,9 +87,7 @@ class TrinoQueryRunner {
             // cancel query
             fetch(nextUri, {
                 method: 'DELETE',
-                headers: {
-                    'X-Trino-User': 'system',
-                },
+                headers: this.resolveHeaders(),
             })
                 .then((response) => response)
                 .then((data) => {
@@ -157,16 +171,11 @@ class TrinoQueryRunner {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort('Timeout: Trino is not responding'), 15000)
 
-        // Prepare headers for the request
-        const headers: Record<string, string> = {
-            'X-Trino-User': 'system',
-        }
-
-        // Add catalog and schema headers if they exist
+        // Merge authentication headers with catalog/schema headers
+        const headers: Record<string, string> = { ...this.resolveHeaders() }
         if (this.trinoCatalog) {
             headers['X-Trino-Catalog'] = this.trinoCatalog
         }
-
         if (this.trinoSchema) {
             headers['X-Trino-Schema'] = this.trinoSchema
         }
@@ -256,12 +265,10 @@ class TrinoQueryRunner {
     async NextPage(previous: any) {
         try {
             // fix cors for testing
-            const nextUri = await previous.nextUri.replace(/^https?:\/\/[^/]+/, '')
+            const nextUri = previous.nextUri.replace(/^https?:\/\/[^/]+/, '')
             const response = await fetch(nextUri, {
                 method: 'GET',
-                headers: {
-                    'X-Trino-User': 'system',
-                },
+                headers: this.resolveHeaders(),
             })
 
             if (!response.ok) {
