@@ -10,3 +10,15 @@ updates:
     directory: "/precise"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Ignore major updates for all dependencies; allow only minor/patch updates.
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
