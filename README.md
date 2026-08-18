@@ -200,9 +200,13 @@ npm run check
 
 Releases are automated. The [release
 workflow](.github/workflows/release.yml) runs on every push to `main`. When it
-detects a changed version in **precise/package.json**, it creates a GitHub
-release with generated release notes and publishes the package to npm. Pushes
+detects a changed version in **precise/package.json**, it publishes the package
+to npm and then creates a GitHub release with generated release notes. Pushes
 that leave the version untouched publish nothing.
+
+Publishing runs before the release is created, so a failed publish leaves
+neither a release nor a tag behind, and the workflow run can be repeated once
+the cause is fixed.
 
 Bump the version from the `precise` directory:
 
