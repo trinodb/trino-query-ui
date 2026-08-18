@@ -196,6 +196,42 @@ To check code quality and formatting with ESLint and Prettier, as defined in
 npm run check
 ```
 
+### Releasing a new version
+
+Releases are automated. The [release
+workflow](.github/workflows/release.yml) runs on every push to `main`. When it
+detects a changed version in **precise/package.json**, it creates a GitHub
+release with generated release notes and publishes the package to npm. Pushes
+that leave the version untouched publish nothing.
+
+Bump the version from the `precise` directory:
+
+```shell
+npm version 0.1.5 --no-git-tag-version
+```
+
+Use `npm version` instead of editing **package.json** by hand, so that
+**package-lock.json** records the same version. The two files drift apart
+otherwise, because the release workflow installs with `npm ci`, which never
+writes to the lockfile. The `--no-git-tag-version` flag skips the commit and
+tag, since the workflow creates the tag from the merged commit.
+
+Commit both changed files with a `Release v0.1.5` message, open a pull request,
+and merge it after review. The new version then appears on
+[npm](https://www.npmjs.com/package/@trinodb/trino-query-ui).
+
+Publishing uses [npm trusted
+publishing](https://docs.npmjs.com/trusted-publishers/) with OpenID Connect, so
+no npm token is stored in this repository. npm verifies the workflow identity
+directly and attaches a provenance attestation to each published version. The
+trusted publisher is configured in the package settings on npmjs.com and must
+match this repository and the **release.yml** workflow file name.
+
+A brand new package name is the one case this does not cover. Trusted publishing
+needs an existing package to attach its configuration to, so the first version
+under a new or renamed package name has to be published by a maintainer with npm
+access before the workflow can take over.
+
 ## Philosophy
 
 This UI's purpose is to provide an environment where, once the cluster is up,
