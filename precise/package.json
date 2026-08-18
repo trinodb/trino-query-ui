@@ -51,7 +51,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
-    "@mui/x-data-grid": "^8.14.0",
+    "@mui/x-data-grid": "^9.11.0",
     "@mui/x-tree-view": "^8.13.1",
     "antlr4-c3": "^3.4.4",
     "antlr4ng": "^3.0.16",
