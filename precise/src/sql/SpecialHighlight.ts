@@ -1,4 +1,3 @@
-import * as monaco from 'monaco-editor'
 import NamedQuery from './NamedQuery'
 import SchemaProvider from './SchemaProvider'
 import TableReference from '../schema/TableReference'
@@ -62,7 +61,12 @@ class SpecialHighlight {
         }
 
         return {
-            range: new monaco.Range(this.startLineNumber, this.startColumn + 1, this.endLineNumber, this.endColumn + 2),
+            range: {
+                startLineNumber: this.startLineNumber,
+                startColumn: this.startColumn + 1,
+                endLineNumber: this.endLineNumber,
+                endColumn: this.endColumn + 2,
+            },
             options: {
                 inlineClassName: inlineClassName,
                 hoverMessage: [

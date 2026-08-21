@@ -32,7 +32,7 @@ const CatalogViewerColumn: React.FC<CatalogViewerColumnProps> = ({ tableRef, col
                     }}
                 >
                     <Stack direction="row">
-                        <Typography fontSize="small" noWrap>
+                        <Typography sx={{ fontSize: 'small' }} noWrap>
                             <Box component="span" sx={{ mr: 1 }}>
                                 {column.getName()}
                             </Box>

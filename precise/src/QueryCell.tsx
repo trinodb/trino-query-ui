@@ -263,7 +263,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                         },
                     })}
                     <Box sx={{ flexGrow: 1 }} />
-                    <Stack direction="row" spacing={3} sx={{ mr: 2 }} alignItems="baseline">
+                    <Stack direction="row" spacing={3} sx={{ mr: 2, alignItems: 'baseline' }}>
                         <Stack direction="row" spacing={1}>
                             <Box component="span" sx={{ fontWeight: 600, color: 'text.secondary', mr: 0.5 }}>
                                 Catalog:
