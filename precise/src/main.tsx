@@ -1,6 +1,10 @@
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
+import { loader } from '@monaco-editor/react'
 import QueryEditor from './QueryEditor'
+import * as monaco from './monaco'
+
+loader.config({ monaco })
 
 function useObservedHeight<T extends HTMLElement>(ref: React.RefObject<T> | React.RefObject<T | null>) {
     const [height, setHeight] = useState(0)

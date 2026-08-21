@@ -46,6 +46,12 @@
     "antlr4ng": "antlr4ng -visitor -listener -Dlanguage=TypeScript -o src/generated/lexer/SqlBase.g4 trino/SqlBase.g4"
   },
   "dependencies": {
+    "antlr4-c3": "^3.4.4",
+    "antlr4ng": "^3.0.16",
+    "sql-formatter": "^15.6.9",
+    "uuidv4": "^6.2.13"
+  },
+  "devDependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@monaco-editor/react": "^4.7.0",
@@ -53,12 +59,6 @@
     "@mui/material": "^9.3.1",
     "@mui/x-data-grid": "^9.11.0",
     "@mui/x-tree-view": "^9.11.0",
-    "antlr4-c3": "^3.4.4",
-    "antlr4ng": "^3.0.16",
-    "sql-formatter": "^15.6.9",
-    "uuidv4": "^6.2.13"
-  },
-  "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
@@ -68,11 +68,22 @@
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.21",
+    "monaco-editor": "^0.56.0",
     "prettier": "^3.6.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "typescript": "^5.9.2",
     "vite": "^7.1.7"
   },
   "peerDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^9.3.1",
+    "@mui/material": "^9.3.1",
+    "@mui/x-data-grid": "^9.11.0",
+    "@mui/x-tree-view": "^9.11.0",
+    "monaco-editor": "^0.56.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }
