@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Tooltip } from '@mui/material'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 
 interface ClearButtonProps {

@@ -337,7 +337,7 @@ class ResultSet extends React.Component<ResultSetProps> {
         return (
             <Box>
                 {response && response.id ? (
-                    <Box display="flex" alignItems="center" gap={1} fontSize="0.8rem" sx={{ p: 1 }}>
+                    <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.8rem' }}>
                         {errorMessage ? (
                             <Alert severity="error" sx={{ py: 0 }}>
                                 {errorMessage}
@@ -376,7 +376,7 @@ class ResultSet extends React.Component<ResultSetProps> {
                                     : 0}
                                 %
                             </Typography>
-                            <Stack alignItems="flex-start">
+                            <Stack sx={{ alignItems: 'flex-start' }}>
                                 <Chip
                                     size="small"
                                     label={response.stats.state}

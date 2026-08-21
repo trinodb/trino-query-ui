@@ -80,7 +80,7 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
                         gap: 8,
                     }}
                 >
-                    <Typography fontSize="small">{table.getName()}</Typography>
+                    <Typography sx={{ fontSize: 'small' }}>{table.getName()}</Typography>
 
                     <IconButton
                         title="Generate SELECT query for this table"

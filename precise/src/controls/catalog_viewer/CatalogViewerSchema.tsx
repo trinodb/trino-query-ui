@@ -62,7 +62,7 @@ const CatalogViewerSchema: React.FC<SchemaProps> = ({
                         gap: 8,
                     }}
                 >
-                    <Typography fontSize="small">{schema.getName()}</Typography>
+                    <Typography sx={{ fontSize: 'small' }}>{schema.getName()}</Typography>
 
                     <IconButton
                         title="Set this schema as default schema"

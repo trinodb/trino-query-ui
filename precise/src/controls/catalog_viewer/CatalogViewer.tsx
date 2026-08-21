@@ -254,7 +254,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                                 />
                             }
                             label={
-                                <Grid container alignItems="center" columnGap={1}>
+                                <Grid container sx={{ alignItems: 'center', columnGap: 1 }}>
                                     <Typography
                                         sx={{
                                             px: 0.1,
@@ -318,7 +318,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                                     }}
                                     label={
                                         <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <Typography fontSize="small">{catalogName}</Typography>
+                                            <Typography sx={{ fontSize: 'small' }}>{catalogName}</Typography>
                                             {catalog.getType() === 'system' && (
                                                 <Chip size="small" label="system catalog" />
                                             )}
