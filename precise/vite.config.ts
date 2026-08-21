@@ -1,6 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const peerDependencies = [
+  '@emotion/react',
+  '@emotion/styled',
+  '@monaco-editor/react',
+  '@mui/icons-material',
+  '@mui/material',
+  '@mui/x-data-grid',
+  '@mui/x-tree-view',
+  'monaco-editor',
+  'react',
+  'react-dom',
+]
+
+const isPeerDependency = (id: string) =>
+  peerDependencies.some((dependency) => id === dependency || id.startsWith(`${dependency}/`))
+
 // Used for local debugging against Trino also running on localhost at port 8080:
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -16,33 +32,15 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: "src/index.ts",
-      name: "QueryEditor",
-      fileName: "index"
+      entry: 'src/index.ts',
+      formats: ['es'],
+      fileName: 'index',
     },
     rollupOptions: {
-      // Don’t bundle peer dependencies like React
-      external: [
-        "react",
-        "react-dom",
-        "react-dom/client",
-        "react-dom/server",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime"
-      ],
-      output: {
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-          "react-dom/client": "ReactDOMClient",
-          "react-dom/server": "ReactDOMServer",
-          "react/jsx-runtime": "jsxRuntime",
-          "react/jsx-dev-runtime": "jsxDevRuntime"
-        }
-      }
-    }
+      external: isPeerDependency,
+    },
   },
-});
+})
 
 // Used for integration into Trino
 // // https://vitejs.dev/config/

@@ -4,7 +4,7 @@ import CodeIcon from '@mui/icons-material/Code'
 import Maximize from '@mui/icons-material/Maximize'
 import Minimize from '@mui/icons-material/Minimize'
 import Editor from '@monaco-editor/react'
-import * as monaco from 'monaco-editor'
+import type * as monaco from 'monaco-editor'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import EnterpriseTabs from './controls/tabs/EnterpriseTabs'
@@ -94,6 +94,7 @@ class CustomTokenizerState implements monaco.languages.IState {
 
 class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorPaneState> {
     private editorRef: monaco.editor.IStandaloneCodeEditor | null = null
+    private monaco: typeof import('monaco-editor') | null = null
     private isRunningParse: boolean = false
     private updateCounter: number = 0
     private parseCancelToken: { cancel: boolean } = { cancel: false }
@@ -141,8 +142,8 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
     handleTabChange = (queryId: string) => {
         this.props.queries.setCurrentQuery(queryId)
-        if (this.editorRef) {
-            const model = monaco.editor.getModel(monaco.Uri.parse(`file:///${queryId}`))
+        if (this.editorRef && this.monaco) {
+            const model = this.monaco.editor.getModel(this.monaco.Uri.parse(`file:///${queryId}`))
             if (model) {
                 this.editorRef.setModel(model)
             }
@@ -156,14 +157,14 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
     handleTabCreate = () => {
         const newQuery = this.props.queries.addQuery(false, 'New query')
-        monaco.editor.createModel('', TRINO_SQL_LANGUAGE, monaco.Uri.parse(`file:///${newQuery.id}`))
+        this.monaco?.editor.createModel('', TRINO_SQL_LANGUAGE, this.monaco.Uri.parse(`file:///${newQuery.id}`))
         this.props.queries.setCurrentQuery(newQuery.id)
         return newQuery.id
     }
 
     handleTabClose = (id: string) => {
         this.props.queries.deleteQuery(id)
-        const model = monaco.editor.getModel(monaco.Uri.parse(`file:///${id}`))
+        const model = this.monaco?.editor.getModel(this.monaco.Uri.parse(`file:///${id}`))
         if (model) {
             model.dispose()
         }
@@ -400,11 +401,15 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         startWordColumn: number,
         endWordColumn: number
     ) {
+        if (!this.monaco) {
+            throw new Error('Monaco editor is not initialized')
+        }
+
         return {
             label: match,
-            kind: monaco.languages.CompletionItemKind.Keyword,
+            kind: this.monaco.languages.CompletionItemKind.Keyword,
             insertText: replace,
-            insertTextRules: monaco.languages.CompletionItemInsertTextRule.None,
+            insertTextRules: this.monaco.languages.CompletionItemInsertTextRule.None,
             // Use Monaco's preferred format for ranges
             range: {
                 startLineNumber: caretPosition.lineNumber,
@@ -652,6 +657,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
     }
 
     editorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
+        this.monaco = monaco
         this.setEditorRef(editor)
 
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
