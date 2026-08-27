@@ -312,6 +312,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             const parserWithChar = new SqlBaseParser(tokenStreamWithChar)
             const listenerWithChar = new SqlBaseListenerImpl(this.props.catalog, this.props.schema)
             parserWithChar.addParseListener(listenerWithChar)
+            parserWithChar.removeErrorListeners()
             const treeWithChar = parserWithChar.singleStatement()
             currentTreePosition = this.parseTreeFromPosition(
                 treeWithChar,
