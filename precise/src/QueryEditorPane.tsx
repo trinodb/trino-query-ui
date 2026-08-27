@@ -271,11 +271,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             endWord = i
         }
 
-        // In parseAndDecoratePromise, after calculating currentWord:
-        console.log('Current word being parsed:', currentWord)
-        console.log('Cursor position:', caretPosition.lineNumber, caretPosition.column)
-        console.log('Word bounds:', startWordColumn, 'to', endWord)
-
         const inputStream = CharStream.fromString(newValue)
         const lexer = new SqlBaseLexer(inputStream)
         const tokenStream = new CommonTokenStream(lexer)
