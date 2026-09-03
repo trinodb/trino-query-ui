@@ -112,7 +112,6 @@ The Query UI builds just like the existing UI in Trino.
 Swap the `defineConfig` from debug to production in `vite.config.ts`
 
 ```shell
-cd precise
 npm install
 npm run build
 ```
@@ -187,7 +186,6 @@ Add `/query/` path. Note any path can be used:
 3. Install the dependencies and run the dev server:
 
 ```shell
-cd precise
 npm install
 npm run dev
 ```
@@ -253,7 +251,7 @@ and minor guarantees would be promises this project breaks on the next release.
 
 Releases are automated. The [release
 workflow](.github/workflows/release.yml) runs on every push to `main`. When it
-detects a changed version in **precise/package.json**, it publishes the package
+detects a changed version in **package.json**, it publishes the package
 to npm and then creates a GitHub release with generated release notes. Pushes
 that leave the version untouched publish nothing.
 
@@ -261,7 +259,7 @@ Publishing runs before the release is created, so a failed publish leaves
 neither a release nor a tag behind, and the workflow run can be repeated once
 the cause is fixed.
 
-Bump the version from the `precise` directory:
+Bump the version from the repository root:
 
 ```shell
 npm version 2.0.0 --no-git-tag-version
