@@ -44,11 +44,25 @@ See details in the [demo animation](./demos.gif).
 npm install @trinodb/trino-query-ui
 ```
 
+The component shares React, Emotion, MUI, and the Monaco editor with the
+application it is embedded into, so those libraries are peer dependencies
+instead of bundled copies. A single shared instance of each keeps the embedding
+application from shipping two React runtimes or two MUI theme contexts:
+
+* `react` and `react-dom`
+* `@emotion/react` and `@emotion/styled`
+* `@mui/material` and `@mui/icons-material`
+* `@mui/x-data-grid` and `@mui/x-tree-view`
+* `@monaco-editor/react`
+* `monaco-editor`, optional and only needed to supply your own editor instance
+
+npm installs peer dependencies automatically. Add them to the embedding
+application explicitly when it pins its own versions of these libraries.
+
 ## Quick start
 
 ```tsx
-import { QueryEditor } from 'trino-query-ui'
-import 'trino-query-ui/dist/index.css'
+import { QueryEditor } from '@trinodb/trino-query-ui'
 
 function MyTrinoApp() {
   return <QueryEditor theme="dark" height={800} />
@@ -56,6 +70,28 @@ function MyTrinoApp() {
 
 export default MyTrinoApp
 ```
+
+All styling comes from MUI and Emotion at runtime, so there is no stylesheet to
+import.
+
+### Supplying the Monaco editor
+
+The query editor renders through `@monaco-editor/react`, which downloads Monaco
+from a content delivery network unless the application supplies an instance.
+Configure the loader once during startup to reuse an instance the application
+already has, and to keep the deployment free of external requests:
+
+```tsx
+import { loader } from '@monaco-editor/react'
+import * as monaco from 'monaco-editor'
+
+loader.config({ monaco })
+```
+
+Import `monaco-editor` or `monaco-editor/editor/editor.main`. Both register the
+standalone editor contributions. The bare `monaco-editor/editor` entry point
+exposes only the API, and an editor built from it has no suggest widget, so the
+schema-aware autocomplete never appears.
 
 ## Building and shipping in Trino
 
