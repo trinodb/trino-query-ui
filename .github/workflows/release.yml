@@ -12,9 +12,6 @@ permissions:
 jobs:
   release-and-publish:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: precise
 
     steps:
       - name: Checkout repo
@@ -25,7 +22,7 @@ jobs:
       - id: version
         uses: EndBug/version-check@v3
         with:
-          file-name: ./precise/package.json
+          file-name: ./package.json
           diff-search: true
 
       - if: steps.version.outputs.changed == 'true'
