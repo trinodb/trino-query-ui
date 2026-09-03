@@ -8,11 +8,6 @@ to your Trino cluster.
 The component can be embedded into any React application and configured to proxy
 requests to a local or remote Trino cluster.
 
-> [!WARNING]
-> This package is under heavy development and is not yet recommended for
-> production workloads. Treat the current release as an early-stage demo;
-> production-ready builds and documentation are planned.
-
 ![Trino Query UI](screenshot.png "Trino Query UI")
 
 Implementation details:
@@ -232,6 +227,17 @@ To check code quality and formatting with ESLint and Prettier, as defined in
 npm run check
 ```
 
+### Versioning
+
+Every release increments the major version. Version 1.0.0 is followed by 2.0.0,
+then 3.0.0, with no compatibility implied between them. The scheme mirrors the
+way Trino itself numbers releases, and it sets the expectation that each version
+is its own upgrade. Read the release notes rather than the version number to
+find out what changed.
+
+The peer dependency ranges and the embedding contract are still moving, so patch
+and minor guarantees would be promises this project breaks on the next release.
+
 ### Releasing a new version
 
 Releases are automated. The [release
@@ -247,7 +253,7 @@ the cause is fixed.
 Bump the version from the `precise` directory:
 
 ```shell
-npm version 0.1.5 --no-git-tag-version
+npm version 2.0.0 --no-git-tag-version
 ```
 
 Use `npm version` instead of editing **package.json** by hand, so that
@@ -256,7 +262,7 @@ otherwise, because the release workflow installs with `npm ci`, which never
 writes to the lockfile. The `--no-git-tag-version` flag skips the commit and
 tag, since the workflow creates the tag from the merged commit.
 
-Commit both changed files with a `Release v0.1.5` message, open a pull request,
+Commit both changed files with a `Release v2.0.0` message, open a pull request,
 and merge it after review. The new version then appears on
 [npm](https://www.npmjs.com/package/@trinodb/trino-query-ui).
 
