@@ -84,6 +84,9 @@ already has, and to keep the deployment free of external requests:
 ```tsx
 import { loader } from '@monaco-editor/react'
 import * as monaco from 'monaco-editor'
+import EditorWorker from 'monaco-editor/editor/editor.worker?worker'
+
+self.MonacoEnvironment = { getWorker: () => new EditorWorker() }
 
 loader.config({ monaco })
 ```
@@ -92,6 +95,14 @@ Import `monaco-editor` or `monaco-editor/editor/editor.main`. Both register the
 standalone editor contributions. The bare `monaco-editor/editor` entry point
 exposes only the API, and an editor built from it has no suggest widget, so the
 schema-aware autocomplete never appears.
+
+Both of those entry points also register the language services for JSON, CSS,
+HTML, and TypeScript, which run in web workers. Monaco resolves the worker
+through `MonacoEnvironment`, and leaving it unset throws an uncaught error at
+startup on every page load. The Trino SQL language runs entirely on the main
+thread, so returning the generic editor worker is enough unless the application
+edits those other languages too. The `?worker` suffix is Vite syntax. Other
+bundlers spell the worker import differently.
 
 ## Building and shipping in Trino
 
