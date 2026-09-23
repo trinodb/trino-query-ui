@@ -149,6 +149,42 @@ To check code quality and formatting with ESLint and Prettier, as defined in
 npm run check
 ```
 
+### Dependency management
+
+The `dependencies` and `devDependencies` are pinned to exact versions rather
+than to caret ranges. The lockfile already pins the versions used to build this
+repository, so exact pins add two things on top of it. Every dependency update
+becomes a visible change to **package.json** that is easy to review and merge,
+and the declared version always equals the version that is actually built and
+tested, with no room for a range to resolve to something else.
+
+The query editor is embedded into the
+[Trino web UI](https://github.com/trinodb/trino/tree/master/core/trino-web-ui),
+which supplies the shared React, Emotion, MUI, and Monaco libraries at runtime.
+Those shared runtime libraries are kept in lockstep with the web UI so the embed
+ships a single instance of each, and the build toolchain is kept close for
+consistency. The authoritative reference is the
+[web UI manifest](https://github.com/trinodb/trino/blob/master/core/trino-web-ui/src/main/resources/webapp/package.json)
+on the Trino default branch.
+
+`npm run sync:check` compares the shared packages against that manifest. It fails
+when a shared runtime library drifts and only warns on the build toolchain, which
+does not affect the embed at runtime. The
+[dependency sync workflow](.github/workflows/dependency-sync.yml) runs the same
+check on every pull request and weekly.
+
+The `peerDependencies` are the exception. They stay as wide ranges rather than
+exact pins, because they are the contract with the embedding application.
+Narrowing them would force an unmet peer dependency on any embedder running a
+slightly older but compatible release, so they declare the widest range the
+component genuinely supports.
+
+Dependabot keeps the pins current. It groups the React and MUI stack and the
+build toolchain into one pull request each, and rewrites the exact pin on every
+update. It ignores major version bumps on the shared packages, so the component
+never runs ahead of the web UI on a major. Major upgrades are deliberate and
+land only when the web UI adopts them, or as a separate, reviewed change.
+
 ### Versioning
 
 Every release increments the major version. Version 1.0.0 is followed by 2.0.0,

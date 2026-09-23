@@ -10,3 +10,65 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Dependencies are pinned to exact versions to stay in lockstep with the
+    # Trino web UI. Rewrite the pin in package.json on every update rather than
+    # only touching the lockfile.
+    versioning-strategy: increase
+    # Group related updates into a single pull request so the shared React and
+    # MUI stack and the build toolchain each move together and merge cleanly.
+    groups:
+      react-and-mui:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@emotion/*"
+          - "@mui/*"
+          - "@monaco-editor/react"
+          - "monaco-editor"
+      toolchain:
+        patterns:
+          - "eslint"
+          - "eslint-plugin-*"
+          - "@typescript-eslint/*"
+          - "typescript"
+          - "vite"
+          - "@vitejs/*"
+          - "prettier"
+    # Never let the shared stack run ahead of the Trino web UI on a major
+    # version. Majors are deliberate and land only when the web UI adopts them,
+    # so ignore major bumps here while minor and patch updates flow freely. The
+    # web UI manifest is the reference:
+    # https://github.com/trinodb/trino/blob/master/core/trino-web-ui/src/main/resources/webapp/package.json
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@emotion/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@mui/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@monaco-editor/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "monaco-editor"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-plugin-*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@typescript-eslint/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prettier"
+        update-types: ["version-update:semver-major"]

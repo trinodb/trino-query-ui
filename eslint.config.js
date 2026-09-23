@@ -72,6 +72,17 @@ export default [
         },
     },
     {
+        files: ['scripts/**/*.{js,mjs}'],
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+                fetch: 'readonly',
+            },
+        },
+    },
+    {
         ignores: ['dist', 'src/generated/**', '.eslintrc.cjs'],
     },
 ];

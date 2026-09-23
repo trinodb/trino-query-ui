@@ -1,0 +1,27 @@
+name: Dependency sync
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    # Weekly, so drift is caught even when the web UI moves and this repo does
+    # not, matching the dependabot update cadence.
+    - cron: '0 6 * * 1'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24' # Use latest LTS version
+
+      - name: Check shared dependencies against the Trino web UI
+        run: npm run sync:check
