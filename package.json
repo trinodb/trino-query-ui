@@ -67,7 +67,7 @@
     "antlr4ng-cli": "^2.0.0",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.21",
+    "eslint-plugin-react-refresh": "^0.5.7",
     "monaco-editor": "^0.56.0",
     "prettier": "^3.6.2",
     "react": "^19.2.8",
