@@ -21,6 +21,7 @@ import Chip, { ChipProps } from '@mui/material/Chip'
 import ReactDOMServer from 'react-dom/server'
 import CopyLink from './utils/CopyLink'
 import ClearButton from './utils/ClearButton'
+import { formatCellValue } from './utils/formatCellValue'
 
 interface ResultSetProps {
     queryId: string | undefined
@@ -86,7 +87,7 @@ class ResultSet extends React.Component<ResultSetProps> {
     renderCell(cellData: any, cellIndex: any) {
         return (
             <td key={cellIndex} className={cellData == null ? 'result-cell-null' : ''}>
-                {cellData == null ? 'null' : cellData}
+                {cellData == null ? 'null' : formatCellValue(cellData)}
             </td>
         )
     }
@@ -109,7 +110,12 @@ class ResultSet extends React.Component<ResultSetProps> {
     }
 
     renderTable = (results: any[], columns: any) => {
-        const muiColumns: GridColDef[] = columns.map((column: any) => ({ field: column.name, minWidth: 150 }))
+        const muiColumns: GridColDef[] = columns.map((column: any) => ({
+            field: column.name,
+            minWidth: 150,
+            // Stringify values so booleans (and other non-strings) render (issue #20)
+            valueFormatter: (value: any) => formatCellValue(value),
+        }))
         const muiRows = results
             .flat()
             .map((row: any[], i: number) =>
@@ -227,11 +233,8 @@ class ResultSet extends React.Component<ResultSetProps> {
         }
 
         // Calculate the maximum width for each column
-        const columnWidths = columns.map((column: any) =>
-            Math.max(
-                column.name.length,
-                ...results.flat().map((row: any[]) => row[columns.indexOf(column)]?.toString().length || 0)
-            )
+        const columnWidths = columns.map((column: any, index: number) =>
+            Math.max(column.name.length, ...results.flat().map((row: any[]) => formatCellValue(row[index]).length))
         )
 
         // Create the header
@@ -246,7 +249,7 @@ class ResultSet extends React.Component<ResultSetProps> {
             page.forEach((row: any[]) => {
                 tableText +=
                     row
-                        .map((cell: any, index: number) => (cell?.toString() || '').padEnd(columnWidths[index]))
+                        .map((cell: any, index: number) => formatCellValue(cell).padEnd(columnWidths[index]))
                         .join(' | ') + '\n'
             })
         })

@@ -39,6 +39,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "package": "npm install && npm run build",
     "package:clean": "npm clean-install && npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prettier:format": "prettier --write \"./src/**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./src/**/*.{ts,tsx}\"",
     "check": "npm install && npm run lint && npm run prettier:check",
@@ -75,7 +77,8 @@
     "react-dom": "^19.2.8",
     "typescript": "^5.9.2",
     "unplugin-dts": "^1.1.1",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vitest": "^5.0.1"
   },
   "peerDependencies": {
     "@emotion/react": "^11.14.0",
