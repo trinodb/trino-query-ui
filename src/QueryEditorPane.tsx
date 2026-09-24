@@ -9,7 +9,7 @@ import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import EnterpriseTabs from './controls/tabs/EnterpriseTabs'
 import * as c3 from 'antlr4-c3'
-import { CharStream, CommonTokenStream, TerminalNode, ParseTree, ParserRuleContext } from 'antlr4ng'
+import { CharStream, CommonTokenStream, TerminalNode, ParseTree, ParserRuleContext, Token } from 'antlr4ng'
 import { TableNameContext } from './generated/lexer/SqlBase.g4/SqlBaseParser'
 import { SqlBaseLexer } from './generated/lexer/SqlBase.g4/SqlBaseLexer'
 import { SqlBaseParser } from './generated/lexer/SqlBase.g4/SqlBaseParser'
@@ -335,7 +335,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             currentTreeIndex = currentTreePosition.ruleIndex
         }
 
-        const markers = errors.getMarkers()
+        const markers = tree.start?.type === Token.EOF ? [] : errors.getMarkers()
         monaco.editor.setModelMarkers(editor.getModel(), 'owner', markers)
 
         // Add decorations for table names
