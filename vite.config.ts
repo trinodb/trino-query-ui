@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import dts from 'unplugin-dts/vite'
 
 const peerDependencies = [
   '@emotion/react',
@@ -20,7 +21,15 @@ const isPeerDependency = (id: string) =>
 // Used for local debugging against Trino also running on localhost at port 8080:
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Emit TypeScript declarations so consumers get types for the public API
+    dts({
+      include: ['src'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+      insertTypesEntry: true,
+    }),
+  ],
   server: {
     proxy: {
       '/v1': {
