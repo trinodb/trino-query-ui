@@ -33,6 +33,22 @@ Implementation details:
 
 See details in the [demo animation](./demos.gif).
 
+## Authentication limitation
+
+The current default setup expects Trino to accept unauthenticated requests.
+Query UI submits queries to `/v1/statement` with the hardcoded SQL identity
+`X-Trino-User: system`. This header selects a user; it does not authenticate
+the request. This limitation applies independently of whether Query UI runs
+through the Vite development server or is embedded in a built application.
+
+Query UI cannot currently reuse an authenticated Trino Web UI session. The
+Web UI's form/OAuth cookies are scoped to `/ui`, and `/v1/statement` uses
+client authentication rather than Web UI authentication. As a result, queries
+can fail with `401 Unauthorized` even when the user is logged into the Web UI.
+
+See [issue #61](https://github.com/trinodb/trino-query-ui/issues/61) for further
+details and planned support for Web UI session reuse.
+
 ## Installation
 
 ```shell
@@ -99,90 +115,14 @@ thread, so returning the generic editor worker is enough unless the application
 edits those other languages too. The `?worker` suffix is Vite syntax. Other
 bundlers spell the worker import differently.
 
-## Building and shipping in Trino
-
-The Query UI builds just like the existing UI in Trino.
-
-1. Build the TypeScript into Javascript and CSS
-2. Copy the distributable path into Trino.
-3. Modify Trino to respond to the query ui path.
-
-### Building for integration
-
-Swap the `defineConfig` from debug to production in `vite.config.ts`
-
-```shell
-npm install
-npm run build
-```
-
-### Copying into Trino
-
-```shell
-mkdir -p $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
-cp -r dist/* $TRINO_HOME/core/trino-main/src/main/resources/query_ui_webapp/
-```
-
-### Modifying Trino to respond to /query/
-
-Modify `$TRINO_HOME/core/trino-main/src/main/java/io/trino/server/ui/WebUiStaticResource.java`:
-
-Add `/query/` path. Note any path can be used:
-
-```java
-    @ResourceSecurity(PUBLIC)
-    @GET
-    @Path("/query")
-    public Response getQuery(@BeanParam ExternalUriInfo externalUriInfo)
-    {
-        return Response.seeOther(externalUriInfo.absolutePath("/query/")).build();
-    }
-    
-    // asset files are always visible
-    @ResourceSecurity(PUBLIC)
-    @GET
-    @Path("/query/assets/{path: .*}")
-    public Response getQueryAssetsFile(@PathParam("path") String path)
-            throws IOException
-    {
-        return getQueryFile("assets/" + path);
-    }
-
-    @ResourceSecurity(PUBLIC)
-    @GET
-    @Path("/query/{path: .*}")
-    public Response getQueryFile(@PathParam("path") String path)
-            throws IOException
-    {
-        if (path.isEmpty()) {
-            path = "index.html";
-        }
-
-        String fullPath = "/query_ui_webapp/" + path;
-        if (!isCanonical(fullPath)) {
-            return Response.status(NOT_FOUND).build();
-        }
-
-        return webUiResource(fullPath);
-    }
-
-    private static boolean isCanonical(String fullPath)
-    {
-        try {
-            return new URI(fullPath).normalize().getPath().equals(fullPath);
-        }
-        catch (URISyntaxException e) {
-            return false;
-        }
-    }
-```
-
 ## Development
 
 ### Build and run
 
-1. Install Node.js (v20 or newer) from <https://nodejs.org/en/download/>
-2. Ensure Trino is running at the configured URL. Defaults to http://localhost:8080
+1. Install Node.js (v24 or newer) from <https://nodejs.org/en/download/>
+2. Ensure Trino is running at the configured URL. Defaults to http://localhost:8080.
+   The default setup requires unauthenticated access; see the
+   [authentication limitation](#authentication-limitation).
 3. Install the dependencies and run the dev server:
 
 ```shell
@@ -191,33 +131,6 @@ npm run dev
 ```
 
 The local URL is displayed, and you can open it in your browser.
-
-### Set up proxying to a local Trino instance
-
-By default `vite.config.ts` is configured so that queries can be proxied to
-Trino's query endpoint running on `http://localhost:8080`. Modify the setting to
-suit your needs with another URL and updated configuration:
-
-```tsx
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  base: '/query/',
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/v1': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-  ...
-});
-```
 
 ### Building the parser
 
@@ -304,9 +217,8 @@ cases are:
 The approach:
 
 1. Direct integration into the Trino UI
-    - No need for an additional authentication hop (although it could be added
-      in the future)
-    - Authenticates as the user executing the query when using OAuth2
+    - Reusing the Web UI login and executing queries as the authenticated user
+      are planned; see the [authentication limitation](#authentication-limitation)
     - Trino does the heavy lifting
 2. Remove friction so you can simply write a query
     - Autocomplete understands the Trino language, tables, and columns
