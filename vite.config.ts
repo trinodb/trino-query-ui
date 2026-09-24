@@ -41,10 +41,3 @@ export default defineConfig({
     },
   },
 })
-
-// Used for integration into Trino
-// // https://vitejs.dev/config/
-// export default defineConfig({
-//   base: '/query/', // This tells your app it's served from the /query/ path
-//   plugins: [react()]
-// });
