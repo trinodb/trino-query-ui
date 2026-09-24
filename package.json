@@ -24,6 +24,7 @@
     "url": "https://github.com/trinodb/trino-query-ui/issues"
   },
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "Apache-2.0",
   "files": [
     "dist"
@@ -73,6 +74,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "^5.9.2",
+    "unplugin-dts": "^1.1.1",
     "vite": "^7.1.7"
   },
   "peerDependencies": {
