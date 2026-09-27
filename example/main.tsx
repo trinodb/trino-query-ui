@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { loader } from '@monaco-editor/react'
-import QueryEditor from './QueryEditor'
+import QueryEditor from '../src/QueryEditor'
 import * as monaco from './monaco'
 
 loader.config({ monaco })

@@ -23,6 +23,17 @@ const isPeerDependency = (id: string) =>
 export default defineConfig({
   plugins: [
     react(),
+    {
+      name: 'example-url',
+      apply: 'serve',
+      configureServer(server) {
+        server.printUrls = () => {
+          for (const url of server.resolvedUrls?.local ?? []) {
+            server.config.logger.info(`  ➜  Local example app: ${new URL('example/', url).href}`)
+          }
+        }
+      },
+    },
     // Emit TypeScript declarations so consumers get types for the public API
     dts({
       include: ['src'],
