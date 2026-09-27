@@ -23,6 +23,6 @@
     /* Debugging */
     "sourceMap": true
   },
-  "include": ["src"],
+  "include": ["src", "example"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

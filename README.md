@@ -130,7 +130,21 @@ npm install
 npm run dev
 ```
 
-The local URL is displayed, and you can open it in your browser.
+Open the displayed `Local example app` URL at http://localhost:5173/example/.
+
+The standalone example lives in `example/`, including its HTML entry point,
+React app, Monaco setup, and favicon. It imports the library directly from
+`src/`, so changes to library source files receive hot updates during development
+without rebuilding the package.
+
+`npm run build` builds the library from `src/index.ts` into `dist/` and generates
+its TypeScript declarations. Example files are excluded from the library output
+and published package. Both `src/` and `example/` are type-checked, linted, and
+included in formatting checks.
+
+Vite copies files from a root `public/` directory into `dist/` when that directory
+exists. Reserve it for static assets that should ship with the library; create
+it when needed. Keep example-only assets in `example/`.
 
 ### Building the parser
 
