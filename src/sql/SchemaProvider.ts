@@ -1,3 +1,4 @@
+import { Logger } from '../utils/logger'
 import TrinoQueryRunner from '../AsyncTrinoClient'
 import Column from '../schema/Column'
 import Catalog from './../schema/Catalog'
@@ -41,7 +42,11 @@ class SchemaProvider {
         return false
     }
 
-    static getTableWithCache(tableRef: TableReference, callback: any): Table | undefined {
+    static getTableWithCache(
+        tableRef: TableReference,
+        callback: any,
+        logger: Logger = new Logger()
+    ): Table | undefined {
         if (SchemaProvider.isTableCached(tableRef)) {
             const table: Table | undefined = this.tables.get(tableRef.fullyQualified)
             if (callback) {
@@ -49,26 +54,27 @@ class SchemaProvider {
             }
             return table
         } else {
-            SchemaProvider.getTableRefreshCache(tableRef, callback)
+            SchemaProvider.getTableRefreshCache(tableRef, callback, logger)
             return undefined
         }
     }
 
-    static getTableIfCached(tableRef: TableReference) {
+    static getTableIfCached(tableRef: TableReference, logger: Logger = new Logger()) {
         if (SchemaProvider.isTableCached(tableRef)) {
             return this.tables.get(tableRef.fullyQualified)
         }
         // async operation to refresh cache but return null in the meantime
-        SchemaProvider.getTableRefreshCache(tableRef, (table: Table) => {})
+        SchemaProvider.getTableRefreshCache(tableRef, (table: Table) => {}, logger)
         return null
     }
 
     static populateCatalogsAndRefreshTableList(
         callback: ((nextCatalogs: Map<string, Catalog>) => void) | null = null,
-        errorCallback: ((error: string) => void) | null = null
+        errorCallback: ((error: string) => void) | null = null,
+        logger: Logger = new Logger()
     ) {
         // refresh catalogs
-        new TrinoQueryRunner()
+        new TrinoQueryRunner(logger)
             .SetAllResultsCallback((results: any[], isError: boolean) => {
                 for (let i = 0; i < results.length; i++) {
                     const catalog: Catalog = new Catalog(results[i][0], results[i][1])
@@ -78,7 +84,7 @@ class SchemaProvider {
                     this.lastSchemaFetchError = undefined
 
                     // refresh tables and schemas for this catalog
-                    new TrinoQueryRunner()
+                    new TrinoQueryRunner(logger)
                         .SetAllResultsCallback((results: any[], isError: boolean) => {
                             for (let i = 0; i < results.length; i++) {
                                 const schemaName = results[i][0]
@@ -119,9 +125,13 @@ class SchemaProvider {
     }
 
     /* callback returns a table type */
-    static async getTableRefreshCache(tableRef: TableReference, callback: (table: Table) => void) {
+    static async getTableRefreshCache(
+        tableRef: TableReference,
+        callback: (table: Table) => void,
+        logger: Logger = new Logger()
+    ) {
         // First try to load all tables in the schema at once
-        const query = new TrinoQueryRunner()
+        const query = new TrinoQueryRunner(logger)
         query
             .SetAllResultsCallback((results: any[]) => {
                 // Create a temporary map to hold all tables in this schema
@@ -161,14 +171,18 @@ class SchemaProvider {
                     callback(requestedTable)
                 } else {
                     // Fall back to DESCRIBE for this specific table
-                    this.fallbackToDescribe(tableRef, callback)
+                    this.fallbackToDescribe(tableRef, callback, logger)
                 }
             })
             .SetErrorMessageCallback((error: string) => {
-                console.log('Error fetching table info:', error)
+                logger.warn('Failed to load table metadata; trying DESCRIBE', error, {
+                    catalog: tableRef.catalogName,
+                    schema: tableRef.schemaName,
+                    table: tableRef.tableName,
+                })
 
                 // If information_schema query fails, fall back to DESCRIBE
-                this.fallbackToDescribe(tableRef, callback)
+                this.fallbackToDescribe(tableRef, callback, logger)
             })
 
         // Query information_schema for all columns in this schema
@@ -185,8 +199,12 @@ class SchemaProvider {
         `)
     }
 
-    private static fallbackToDescribe(tableRef: TableReference, callback: (table: Table) => void) {
-        const fallbackQuery = new TrinoQueryRunner()
+    private static fallbackToDescribe(
+        tableRef: TableReference,
+        callback: (table: Table) => void,
+        logger: Logger = new Logger()
+    ) {
+        const fallbackQuery = new TrinoQueryRunner(logger)
         fallbackQuery
             .SetAllResultsCallback((results: any[]) => {
                 const table = new Table(tableRef.tableName)

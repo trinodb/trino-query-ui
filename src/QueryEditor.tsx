@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useLayoutEffect } from 'react'
 import { styled } from '@mui/material/styles'
 import { Box, Drawer, useMediaQuery } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
@@ -9,8 +9,12 @@ import { darkTheme, lightTheme } from './theme'
 import Queries from './schema/Queries'
 import QueryInfo from './schema/QueryInfo'
 import CatalogViewer from './controls/catalog_viewer/CatalogViewer'
+import { Logger, type LogLevel } from './utils/logger'
+import { LoggerContext } from './utils/LoggerContext'
 
 interface IQueryEditor {
+    /** Defaults to warn. Debug output includes full SQL query text. */
+    logLevel?: LogLevel
     height: number
     theme?: 'dark' | 'light'
     enableCatalogSearchColumns?: boolean
@@ -71,8 +75,12 @@ const AppBar = styled(MuiAppBar, {
     ],
 }))
 
-export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQueryEditor) => {
-    const [queries, setQueries] = useState<Queries>(() => new Queries())
+export const QueryEditor = ({ height, theme, enableCatalogSearchColumns, logLevel }: IQueryEditor) => {
+    const resolvedLogLevel: LogLevel = logLevel ?? 'warn'
+    const [logger] = useState(() => new Logger(resolvedLogLevel))
+    // Keep the logger stable so existing runners and callbacks see level changes.
+    useLayoutEffect(() => logger.setLevel(resolvedLogLevel), [logger, resolvedLogLevel])
+    const [queries, setQueries] = useState<Queries>(() => new Queries(logger))
     const [drawerOpen, setDrawerOpen] = useState<boolean>(true)
     const [queryRunning, setQueryRunning] = useState<boolean>(false)
     const [currentQuery, setCurrentQuery] = useState<QueryInfo>(queries.getCurrentQuery())
@@ -142,66 +150,69 @@ export const QueryEditor = ({ height, theme, enableCatalogSearchColumns }: IQuer
     }
 
     return (
-        <ThemeProvider theme={muiThemeToUse()}>
-            <CssBaseline />
-            <Box
-                ref={containerRef}
-                sx={{
-                    border: 1,
-                    borderColor: 'divider',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    height: height,
-                }}
-            >
-                <AppBar color="transparent" open={drawerOpen} />
-
-                <Drawer
+        <LoggerContext.Provider value={logger}>
+            <ThemeProvider theme={muiThemeToUse()}>
+                <CssBaseline />
+                <Box
+                    ref={containerRef}
                     sx={{
-                        width: DRAWER_WIDTH,
-                        flexShrink: 0,
-                        '& .MuiDrawer-paper': {
-                            width: DRAWER_WIDTH,
-                            boxSizing: 'border-box',
-                        },
-                    }}
-                    variant="persistent"
-                    anchor="left"
-                    open={drawerOpen}
-                    ModalProps={{
-                        container: containerRef.current,
-                        disablePortal: true,
-                    }}
-                    slotProps={{
-                        paper: {
-                            sx: {
-                                position: 'absolute',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                overflow: 'hidden',
-                            },
-                        },
+                        border: 1,
+                        borderColor: 'divider',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        height: height,
                     }}
                 >
-                    <CatalogViewer
-                        onGenerateQuery={setQueryContent}
-                        onAppendQuery={appendQueryContent}
-                        onDrawerToggle={() => setDrawerOpen(false)}
-                        enableSearchColumns={enableCatalogSearchColumns}
-                    />
-                </Drawer>
+                    <AppBar color="transparent" open={drawerOpen} />
 
-                <Main open={drawerOpen} sx={{ p: 0 }}>
-                    <QueryCell
-                        queries={queries}
-                        drawerOpen={drawerOpen}
-                        height={height}
-                        onDrawerToggle={() => setDrawerOpen(true)}
-                        theme={theme}
-                    />
-                </Main>
-            </Box>
-        </ThemeProvider>
+                    <Drawer
+                        sx={{
+                            width: DRAWER_WIDTH,
+                            flexShrink: 0,
+                            '& .MuiDrawer-paper': {
+                                width: DRAWER_WIDTH,
+                                boxSizing: 'border-box',
+                            },
+                        }}
+                        variant="persistent"
+                        anchor="left"
+                        open={drawerOpen}
+                        ModalProps={{
+                            container: containerRef.current,
+                            disablePortal: true,
+                        }}
+                        slotProps={{
+                            paper: {
+                                sx: {
+                                    position: 'absolute',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden',
+                                },
+                            },
+                        }}
+                    >
+                        <CatalogViewer
+                            onGenerateQuery={setQueryContent}
+                            onAppendQuery={appendQueryContent}
+                            onDrawerToggle={() => setDrawerOpen(false)}
+                            enableSearchColumns={enableCatalogSearchColumns}
+                        />
+                    </Drawer>
+
+                    <Main open={drawerOpen} sx={{ p: 0 }}>
+                        <QueryCell
+                            logger={logger}
+                            queries={queries}
+                            drawerOpen={drawerOpen}
+                            height={height}
+                            onDrawerToggle={() => setDrawerOpen(true)}
+                            theme={theme}
+                        />
+                    </Main>
+                </Box>
+            </ThemeProvider>
+        </LoggerContext.Provider>
     )
 }
 

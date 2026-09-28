@@ -1,3 +1,4 @@
+import { Logger } from './utils/logger'
 import React from 'react'
 import {
     Alert,
@@ -24,6 +25,7 @@ import ClearButton from './utils/ClearButton'
 import { formatCellValue } from './utils/formatCellValue'
 
 interface ResultSetProps {
+    logger: Logger
     queryId: string | undefined
     results: any[]
     columns: any[]
@@ -273,10 +275,10 @@ class ResultSet extends React.Component<ResultSetProps> {
                 }),
             ])
             .then(() => {
-                console.log('Table copied successfully')
+                this.props.logger.debug('Table copied successfully')
             })
             .catch((err) => {
-                console.error('Failed to copy table:', err)
+                this.props.logger.error('Failed to copy results to clipboard', err, { queryId: this.props.queryId })
             })
     }
 

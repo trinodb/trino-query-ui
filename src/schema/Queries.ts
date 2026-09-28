@@ -25,7 +25,7 @@ class Queries extends Tabs<QueryInfo> {
                             )
                         )
                     } catch (e) {
-                        console.error('Error parsing stored query:', e)
+                        this.logger.error('Failed to parse stored query; removing saved entry', e, { storageKey: key })
                         localStorage.removeItem(key)
                     }
                 }
