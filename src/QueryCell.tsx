@@ -1,3 +1,4 @@
+import { Logger } from './utils/logger'
 import React, { ReactNode } from 'react'
 import { Box, Divider, IconButton, Stack, TextField, Toolbar, Typography } from '@mui/material'
 import type { TextFieldProps } from '@mui/material/TextField'
@@ -29,6 +30,7 @@ interface QueryCellState {
 }
 
 interface QueryCellProps {
+    logger: Logger
     queries: Queries
     drawerOpen: boolean
     height: number
@@ -53,7 +55,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             editingSchema: false,
             editorCollapsed: false,
         }
-        this.queryRunner = new AsyncTrinoClient()
+        this.queryRunner = new AsyncTrinoClient(props.logger)
         this.setupQueryRunner()
     }
 
@@ -325,6 +327,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                 <Divider />
                 <Box sx={{ display: this.state.editorCollapsed ? 'none' : 'block' }}>
                     <QueryEditorPane
+                        logger={this.props.logger}
                         onQueryChange={this.handleQueryChange}
                         onSelectChange={() => {}}
                         onExecute={() => this.Execute()}
@@ -337,6 +340,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
                     {this.props.theme != 'dark' && <Divider />}
                 </Box>
                 <ResultSet
+                    logger={this.props.logger}
                     columns={columns}
                     results={results}
                     response={response}

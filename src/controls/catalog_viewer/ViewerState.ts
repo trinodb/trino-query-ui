@@ -1,3 +1,4 @@
+import { Logger } from '../../utils/logger'
 import Catalog from './../../schema/Catalog'
 import TableReference from '../../schema/TableReference'
 import SchemaProvider from '../../sql/SchemaProvider'
@@ -25,7 +26,11 @@ export class ViewerStateManager {
     private isSearching = false
     private onLoadingChange: (loading: boolean) => void
 
-    constructor(onStateUpdate: StateUpdateCallback, onLoadingChange: (loading: boolean) => void) {
+    constructor(
+        onStateUpdate: StateUpdateCallback,
+        onLoadingChange: (loading: boolean) => void,
+        private logger: Logger = new Logger()
+    ) {
         this.onStateUpdate = onStateUpdate
         this.onLoadingChange = onLoadingChange
     }
@@ -102,19 +107,23 @@ export class ViewerStateManager {
             if (index >= tablesToLoad.length) return
 
             const tableRef = tablesToLoad[index]
-            SchemaProvider.getTableWithCache(tableRef, (loadedTable: Table) => {
-                this.searchTableColumns(
-                    loadedTable,
-                    tableRef.catalogName,
-                    tableRef.schemaName,
-                    tableRef.tableName,
-                    filterItem
-                )
-                this.notifyStateUpdate()
+            SchemaProvider.getTableWithCache(
+                tableRef,
+                (loadedTable: Table) => {
+                    this.searchTableColumns(
+                        loadedTable,
+                        tableRef.catalogName,
+                        tableRef.schemaName,
+                        tableRef.tableName,
+                        filterItem
+                    )
+                    this.notifyStateUpdate()
 
-                // Load the next table only after this one is complete
-                loadNextTable(index + 1)
-            })
+                    // Load the next table only after this one is complete
+                    loadNextTable(index + 1)
+                },
+                this.logger
+            )
         }
 
         // Start with the first table

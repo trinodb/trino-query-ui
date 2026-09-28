@@ -85,6 +85,36 @@ export default MyTrinoApp
 All styling comes from MUI and Emotion at runtime, so there is no stylesheet to
 import.
 
+### Logging
+
+`QueryEditor` accepts an optional `logLevel` prop, defaulting to `warn`:
+
+| Level | Output |
+| --- | --- |
+| `debug` | Development diagnostics, warnings, and errors |
+| `warn` | Warnings and errors (default) |
+| `error` | Errors only |
+| `silent` | No Query UI logs |
+
+```tsx
+<QueryEditor height={800} logLevel={import.meta.env.DEV ? 'debug' : 'warn'} />
+```
+
+The example above uses Vite's development flag. Other embedding applications can
+pass a level directly. Each editor has its own setting, which can be changed at
+runtime without remounting it. The `LogLevel` TypeScript type is also exported.
+
+Debug output includes full SQL query text, catalog searches, and autocomplete
+information. Messages use the `[trino-query-ui]` prefix.
+
+**To see debug messages in Chrome DevTools**, open **Console → Log levels**
+and enable **Verbose**. Debug messages use `console.debug`, which Chrome may
+hide even when `logLevel="debug"` is set. The **Info** filter does not include
+these messages. In other browsers, enable the equivalent debug/verbose filter.
+
+Logging settings do not affect user-facing errors or bundled dependencies' own
+console output.
+
 ### Supplying the Monaco editor
 
 The query editor renders through `@monaco-editor/react`, which downloads Monaco

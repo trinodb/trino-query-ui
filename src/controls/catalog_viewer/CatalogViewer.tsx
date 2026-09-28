@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { LoggerContext } from '../../utils/LoggerContext'
+import React, { useContext, useState, useEffect, useCallback, useRef } from 'react'
 import {
     Alert,
     AlertTitle,
@@ -40,6 +41,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     onDrawerToggle,
     enableSearchColumns,
 }) => {
+    const logger = useContext(LoggerContext)
     // Basic state
     const [catalogs, setCatalogs] = useState<Map<string, Catalog>>(new Map())
     const [errorMessage, setErrorMessage] = useState<string>()
@@ -57,15 +59,19 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
 
     // Initialize viewer state manager
     useEffect(() => {
-        viewerState.current = new ViewerStateManager((update) => {
-            console.log('State update received:', {
-                matches: update.matches.size,
-                expanded: update.expandedNodes.size,
-            })
-            setMatches(update.matches)
-            setExpandedNodes(update.expandedNodes)
-        }, setIsLoadingColumns)
-    }, [])
+        viewerState.current = new ViewerStateManager(
+            (update) => {
+                logger.debug('State update received:', {
+                    matches: update.matches.size,
+                    expanded: update.expandedNodes.size,
+                })
+                setMatches(update.matches)
+                setExpandedNodes(update.expandedNodes)
+            },
+            setIsLoadingColumns,
+            logger
+        )
+    }, [logger])
 
     // Handle filter changes
     useEffect(() => {
@@ -79,14 +85,14 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
     // Apply search when filter or search options change
     useEffect(() => {
         if (viewerState.current) {
-            console.log('Starting new search:', {
+            logger.debug('Starting new search:', {
                 filter: debouncedFilterText,
                 searchColumns,
                 catalogCount: catalogs.size,
             })
             viewerState.current.startSearch(debouncedFilterText, searchColumns, catalogs)
         }
-    }, [debouncedFilterText, searchColumns, catalogs])
+    }, [debouncedFilterText, searchColumns, catalogs, logger])
 
     const loadCatalogs = useCallback(async () => {
         setIsLoading(true)
@@ -101,13 +107,14 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
                 (error: string) => {
                     setErrorMessage(error)
                     setIsLoading(false)
-                }
+                },
+                logger
             )
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred')
             setIsLoading(false)
         }
-    }, [])
+    }, [logger])
 
     const handleToggle = async (path: string) => {
         if (!viewerState.current) return
@@ -121,9 +128,13 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
             const tableRef = new TableReference(pathParts[0], pathParts[1], pathParts[2])
 
             await new Promise<void>((resolve) => {
-                SchemaProvider.getTableWithCache(tableRef, () => {
-                    resolve()
-                })
+                SchemaProvider.getTableWithCache(
+                    tableRef,
+                    () => {
+                        resolve()
+                    },
+                    logger
+                )
             })
         }
     }
@@ -146,20 +157,24 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
         schemaName?: string
     ) => {
         if (!onAppendQuery) {
-            console.warn('No query handler available')
+            logger.warn('Cannot apply catalog action: onAppendQuery callback is missing', { queryType })
             return
         }
 
         if (queryType === 'SELECT' && tableRef) {
             // Load table first to get columns
-            SchemaProvider.getTableWithCache(tableRef, (table: any) => {
-                const columns = table
-                    .getColumns()
-                    .map((col: { getName: () => string }) => col.getName())
-                    .join(',\n    ')
-                const query = `SELECT\n    ${columns}\nFROM ${tableRef.catalogName}.${tableRef.schemaName}.${tableRef.tableName}\nlimit 100`
-                onAppendQuery(query, tableRef.catalogName, tableRef.schemaName)
-            })
+            SchemaProvider.getTableWithCache(
+                tableRef,
+                (table: any) => {
+                    const columns = table
+                        .getColumns()
+                        .map((col: { getName: () => string }) => col.getName())
+                        .join(',\n    ')
+                    const query = `SELECT\n    ${columns}\nFROM ${tableRef.catalogName}.${tableRef.schemaName}.${tableRef.tableName}\nlimit 100`
+                    onAppendQuery(query, tableRef.catalogName, tableRef.schemaName)
+                },
+                logger
+            )
         } else if (queryType === 'SET_SCHEMA' && catalogName && schemaName) {
             // Just set the catalog and schema
             onAppendQuery('', catalogName, schemaName)
@@ -172,7 +187,7 @@ const CatalogViewer: React.FC<CatalogViewerProps> = ({
         if (onGenerateQuery) {
             onGenerateQuery('', catalogName, '')
         } else {
-            console.warn('No query handler available')
+            logger.warn('Cannot select catalog: onGenerateQuery callback is missing', { catalog: catalogName })
         }
     }
 

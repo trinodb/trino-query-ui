@@ -1,3 +1,4 @@
+import { Logger } from '../utils/logger'
 import TrinoQueryRunner from '../AsyncTrinoClient'
 
 class Column {
@@ -35,9 +36,9 @@ class Column {
         return this.extra ? this.extra : this.comment
     }
 
-    getSampleValues(TableRef: any, callback: any) {
+    getSampleValues(TableRef: any, callback: any, logger: Logger = new Logger()) {
         // get sample values for this column
-        new TrinoQueryRunner()
+        new TrinoQueryRunner(logger)
             .SetAllResultsCallback((results: any[]) => {
                 this.sampleValues = []
                 for (let i = 0; i < results.length; i++) {
