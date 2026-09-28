@@ -21,11 +21,14 @@ class SqlBaseErrorListener implements ANTLRErrorListener {
         e: any
     ): void {
         // Handle the error (e.g., log it, add it to a list, etc.)
+        const startColumn = charPositionInLine + 1
+        // start and stop index the whole input, not the line; EOF spans nothing
+        const length = offendingSymbol ? offendingSymbol.stop - offendingSymbol.start + 1 : 0
         this.markers.push({
             startLineNumber: line,
-            startColumn: charPositionInLine,
+            startColumn,
             endLineNumber: line,
-            endColumn: offendingSymbol.stop + 2,
+            endColumn: startColumn + Math.max(length, 1),
             message: msg,
             severity: 8,
         })
