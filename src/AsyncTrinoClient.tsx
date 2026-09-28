@@ -1,5 +1,8 @@
+import { Logger } from './utils/logger'
+
 // class to execute Trino queries
 class TrinoQueryRunner {
+    constructor(private logger: Logger = new Logger()) {}
     private state: any = {}
     private query: string = ''
     private rowsRead: number = 0
@@ -85,7 +88,7 @@ class TrinoQueryRunner {
                     this.HandleStopped()
                 })
                 .catch((error) => {
-                    console.error('Error:', error)
+                    this.logger.error('Failed to cancel query', error, { queryId: state.id })
                     this.setErrorMessage(error.toString())
                     this.HandleStopped()
                 })
@@ -150,7 +153,7 @@ class TrinoQueryRunner {
         this.isRunning = true
         this.SetStarted()
         this.query = statement
-        console.log('Starting query: ' + statement)
+        this.logger.debug('Starting query: ' + statement)
         this.rowsRead = 0
         this.ClearState()
 
@@ -210,7 +213,10 @@ class TrinoQueryRunner {
                     errorMessage = error.message
                 }
 
-                console.error('Error starting query:', errorMessage)
+                this.logger.error('Failed to start query', error, {
+                    catalog: this.trinoCatalog,
+                    schema: this.trinoSchema,
+                })
                 this.setErrorMessage(errorMessage)
                 this.HandleStopped()
             })
@@ -222,7 +228,7 @@ class TrinoQueryRunner {
     private extractHeaders(headers: Headers) {
         const headerEntries: [string, string][] = []
 
-        // Iterate through all headers and log them
+        // Collect headers for case-insensitive lookup
         headers.forEach((value, key) => {
             headerEntries.push([key.toLowerCase(), value])
         })
@@ -234,17 +240,19 @@ class TrinoQueryRunner {
         const setCatalog = headerMap.get('x-trino-set-catalog')
         const setSchema = headerMap.get('x-trino-set-schema')
 
-        console.log(`Found SET headers - Catalog: ${setCatalog}, Schema: ${setSchema}`)
+        if (setCatalog || setSchema) {
+            this.logger.debug('Session context updated', { catalog: setCatalog, schema: setSchema })
+        }
 
         // Update our stored values when SET headers are present
         if (setCatalog) {
             this.trinoCatalog = setCatalog
-            console.log(`Updated catalog to: ${this.trinoCatalog}`)
+            this.logger.debug(`Updated catalog to: ${this.trinoCatalog}`)
         }
 
         if (setSchema) {
             this.trinoSchema = setSchema
-            console.log(`Updated schema to: ${this.trinoSchema}`)
+            this.logger.debug(`Updated schema to: ${this.trinoSchema}`)
         }
 
         // Call the callback with the extracted headers
@@ -288,23 +296,11 @@ class TrinoQueryRunner {
             } else {
                 this.HandleSetAllResults(data['stats']['state'] == 'FAILED')
                 this.HandleStopped()
-                console.log('Query finished')
+                this.logger.debug('Query finished')
             }
         } catch (error) {
-            if (error instanceof Error) {
-                // handle errors of time net::ERR_CONNECTION_REFUSED
-                if (error.message === 'Failed to fetch') {
-                    console.error('Error:', error.message + ' - Trino is not running or not reachable')
-                    this.setErrorMessage(error.message)
-                } else {
-                    console.error('Error:', error.message)
-                    this.setErrorMessage(error.message)
-                }
-            } else {
-                // Handle cases where the thrown error is not an Error instance
-                console.error('An unexpected error occurred:', error)
-                this.setErrorMessage('An unexpected error occurred')
-            }
+            this.logger.error('Failed to fetch query results', error, { queryId: previous.id })
+            this.setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred')
             this.HandleStopped()
         }
     }

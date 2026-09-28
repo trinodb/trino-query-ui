@@ -1,4 +1,5 @@
 import TabInfo from './TabInfo'
+import { Logger } from '../../utils/logger'
 
 // Abstract base class for tab management
 abstract class Tabs<T extends TabInfo> {
@@ -6,7 +7,7 @@ abstract class Tabs<T extends TabInfo> {
     protected currentTabId: string
     protected changeListeners: (() => void)[] = []
 
-    constructor() {
+    constructor(protected logger: Logger = new Logger()) {
         this.tabs = this.loadTabs()
         if (this.tabs.length === 0) {
             this.tabs.push(this.createNewTab())
@@ -82,7 +83,7 @@ abstract class Tabs<T extends TabInfo> {
             this.saveTabs()
             this.notifyListeners()
         } else {
-            console.error('Invalid tab order update')
+            this.logger.error('Failed to reorder tabs: order must contain every existing tab exactly once')
         }
     }
 

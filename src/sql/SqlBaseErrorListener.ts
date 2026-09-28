@@ -42,7 +42,6 @@ class SqlBaseErrorListener implements ANTLRErrorListener {
         configs: any
     ): void {
         // Handle the ambiguity (e.g., log it, add it to a list, etc.)
-        //console.error(`Ambiguity at indexes ${startIndex}-${stopIndex}`);
     }
 
     //reportContextSensitivity(recognizer: Parser, dfa: DFA, startIndex: number, stopIndex: number, prediction: number, configs: ATNConfigSet): void;
@@ -55,7 +54,6 @@ class SqlBaseErrorListener implements ANTLRErrorListener {
         configs: any
     ): void {
         // Handle the context sensitivity (e.g., log it, add it to a list, etc.)
-        //console.error(`Context sensitivity at indexes ${startIndex}-${stopIndex}`);
     }
 
     // reportAttemptingFullContext(recognizer: Parser, dfa: DFA, startIndex: number, stopIndex: number, conflictingAlts: BitSet | undefined, configs: ATNConfigSet): void;
@@ -68,7 +66,6 @@ class SqlBaseErrorListener implements ANTLRErrorListener {
         configs: any
     ): void {
         // Handle the full context attempt (e.g., log it, add it to a list, etc.)
-        //console.error(`Full context attempt at indexes ${startIndex}-${stopIndex}`);
     }
 }
 
