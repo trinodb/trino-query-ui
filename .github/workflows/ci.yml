@@ -22,5 +22,8 @@ jobs:
       - name: Check code style
         run: npm run check:clean
 
+      - name: Run tests
+        run: npm test
+
       - name: Build package
         run: npm run package:clean
