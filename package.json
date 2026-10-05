@@ -79,7 +79,7 @@
     "typescript": "5.9.3",
     "unplugin-dts": "1.1.1",
     "vite": "7.3.6",
-    "vitest": "5.0.2"
+    "vitest": "5.0.3"
   },
   "peerDependencies": {
     "@emotion/react": "^11.14.0",
