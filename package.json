@@ -72,7 +72,7 @@
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.5.7",
-    "monaco-editor": "0.56.0",
+    "monaco-editor": "0.57.0",
     "prettier": "3.9.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -89,7 +89,7 @@
     "@mui/material": "^9.0.0",
     "@mui/x-data-grid": "^9.0.0",
     "@mui/x-tree-view": "^9.0.0",
-    "monaco-editor": "^0.56.0",
+    "monaco-editor": "^0.57.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
