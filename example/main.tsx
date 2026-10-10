@@ -41,7 +41,7 @@ export default function App() {
         >
             <h1>Trino query editor - Example app</h1>
             <div ref={slotRef} style={{ minHeight: 0 }}>
-                <QueryEditor theme="dark" height={slotHeight} />
+                <QueryEditor theme="dark" height={slotHeight} logLevel={import.meta.env.DEV ? 'debug' : 'warn'} />
             </div>
         </div>
     )
