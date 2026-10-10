@@ -23,7 +23,7 @@ import Column from './schema/Column'
 import NamedQuery from './sql/NamedQuery'
 import { tokenMap } from './sql/TokenMap'
 import SubstitutionEditor from './SubstitutionEditor'
-import { format } from 'sql-formatter'
+import { formatSql } from './sql/formatSql'
 
 const TRINO_SQL_LANGUAGE = 'trinosql'
 const TABS_HEIGHT = 64
@@ -807,12 +807,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             const currentValue = this.editorRef.getValue()
 
             try {
-                const config = {
-                    indent: '  ',
-                    uppercase: true,
-                    linesBetweenQueries: 2,
-                }
-                const formattedSql = format(currentValue, config)
+                const formattedSql = formatSql(currentValue)
 
                 // Replace the entire editor content with the formatted SQL
                 this.editorRef.setValue(formattedSql)
@@ -840,12 +835,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 const selectedText = model.getValueInRange(selection)
                 try {
                     // Format just the selected text
-                    const config = {
-                        indent: '  ',
-                        uppercase: true,
-                        linesBetweenQueries: 2,
-                    }
-                    const formattedSql = format(selectedText, config)
+                    const formattedSql = formatSql(selectedText)
 
                     // Replace just the selected part
                     this.editorRef.executeEdits('format-selection', [
