@@ -77,7 +77,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "typescript": "5.9.3",
-    "unplugin-dts": "1.1.1",
+    "unplugin-dts": "1.1.2",
     "vite": "7.3.6",
     "vitest": "5.0.3"
   },
