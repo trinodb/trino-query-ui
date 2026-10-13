@@ -29,6 +29,9 @@ Implementation details:
 * View schema information in SQL queries via mouse-over hovering
 * Format SQL queries in the editor
 * Copy result set table data to the clipboard
+* Download result set table data as a CSV file
+* Limit result sets to 10,000 rows, which also applies to the copied and
+  downloaded data
 * Monitor query processing across the Trino cluster
 
 See details in the [demo animation](./demos.gif).

@@ -22,6 +22,8 @@ import ReactDOMServer from 'react-dom/server'
 import CopyLink from './utils/CopyLink'
 import ClearButton from './utils/ClearButton'
 import { formatCellValue } from './utils/formatCellValue'
+import { formatTableAsCsv } from './utils/formatTableAsCsv'
+import DownloadCsvButton from './utils/DownloadCsvButton'
 
 interface ResultSetProps {
     queryId: string | undefined
@@ -257,6 +259,19 @@ class ResultSet extends React.Component<ResultSetProps> {
         return tableText
     }
 
+    downloadCsv() {
+        const { results, columns, queryId } = this.props
+        const csvContent = formatTableAsCsv(results, columns)
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${queryId ?? 'query'}.csv`
+        link.click()
+        // revoke after the click so the browser can start the download first
+        setTimeout(() => URL.revokeObjectURL(url), 0)
+    }
+
     copy() {
         const { results, columns } = this.props
         const htmlContent = ReactDOMServer.renderToString(this.renderInnerTable(results, this.props.response, columns))
@@ -358,6 +373,7 @@ class ResultSet extends React.Component<ResultSetProps> {
                                     <>
                                         <ClearButton onClear={() => this.props.onClearResults(queryId)} />
                                         <CopyLink copy={() => this.copy()} />
+                                        <DownloadCsvButton download={() => this.downloadCsv()} />
                                     </>
                                 ) : null
                             ) : null}

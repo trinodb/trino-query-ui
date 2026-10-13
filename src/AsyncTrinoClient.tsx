@@ -1,3 +1,6 @@
+// maximum number of rows kept for a query, further rows are trimmed
+export const MAX_RESULT_ROWS = 10000
+
 // class to execute Trino queries
 class TrinoQueryRunner {
     private state: any = {}
@@ -315,7 +318,7 @@ class TrinoQueryRunner {
             this.SetColumns(data.columns)
         }
 
-        const maxRows = 10000
+        const maxRows = MAX_RESULT_ROWS
 
         if (data.data) {
             if (data.data.length + this.rowsRead > maxRows) {
