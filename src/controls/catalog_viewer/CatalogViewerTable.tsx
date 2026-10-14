@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import { LoggerContext } from '../../utils/LoggerContext'
+import React, { useContext, useState, useEffect } from 'react'
 import { Alert, Box, IconButton, Typography } from '@mui/material'
 import { TreeItem } from '@mui/x-tree-view'
 import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined'
@@ -28,6 +29,7 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     isLoading,
     onGenerateQuery,
 }) => {
+    const logger = useContext(LoggerContext)
     const [table, setTable] = useState<Table>(() => new Table(tableRef.tableName))
 
     const [isLoadingColumns, setIsLoadingColumns] = useState(false)
@@ -37,21 +39,25 @@ const CatalogViewerTable: React.FC<CatalogViewerTableProps> = ({
     // Load columns when expanded OR when there's an active filter
     useEffect(() => {
         if ((isExpanded || filterText) && !table.hasLoadedColumns()) {
-            console.log(`Loading table data for ${tableRef.tableName}`, {
+            logger.debug(`Loading table data for ${tableRef.tableName}`, {
                 isExpanded,
                 filterText,
                 hasColumns: table.getColumns().length > 0,
             })
 
             table.setLoading(true)
-            SchemaProvider.getTableWithCache(tableRef, (loadedTable: Table) => {
-                console.log(`Table data loaded for ${tableRef.tableName}`, {
-                    columnCount: loadedTable.getColumns().length,
-                })
-                setTable(loadedTable)
-            })
+            SchemaProvider.getTableWithCache(
+                tableRef,
+                (loadedTable: Table) => {
+                    logger.debug(`Table data loaded for ${tableRef.tableName}`, {
+                        columnCount: loadedTable.getColumns().length,
+                    })
+                    setTable(loadedTable)
+                },
+                logger
+            )
         }
-    }, [isExpanded, filterText, tableRef, table])
+    }, [isExpanded, filterText, tableRef, table, logger])
 
     // Check visibility using the passed down helper
     if (!isVisible(tablePath)) {

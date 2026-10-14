@@ -1,3 +1,4 @@
+import { LoggerContext } from './utils/LoggerContext'
 import React, { ReactNode } from 'react'
 import { Box, Divider, IconButton, Stack, TextField, Toolbar, Typography } from '@mui/material'
 import type { TextFieldProps } from '@mui/material/TextField'
@@ -37,10 +38,17 @@ interface QueryCellProps {
 }
 
 class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
+    static contextType = LoggerContext
+    declare context: React.ContextType<typeof LoggerContext>
+
+    private get logger() {
+        return this.context
+    }
+
     private queryRunner: AsyncTrinoClient
 
-    constructor(props: QueryCellProps) {
-        super(props)
+    constructor(props: QueryCellProps, context: React.ContextType<typeof LoggerContext>) {
+        super(props, context)
         this.state = {
             results: [],
             columns: [],
@@ -53,7 +61,7 @@ class QueryCell extends React.Component<QueryCellProps, QueryCellState> {
             editingSchema: false,
             editorCollapsed: false,
         }
-        this.queryRunner = new AsyncTrinoClient()
+        this.queryRunner = new AsyncTrinoClient(this.logger)
         this.setupQueryRunner()
     }
 

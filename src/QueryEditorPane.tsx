@@ -1,3 +1,4 @@
+import { LoggerContext } from './utils/LoggerContext'
 import React from 'react'
 import { Box, Stack, Tooltip, IconButton } from '@mui/material'
 import CodeIcon from '@mui/icons-material/Code'
@@ -93,6 +94,13 @@ class CustomTokenizerState implements monaco.languages.IState {
 }
 
 class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorPaneState> {
+    static contextType = LoggerContext
+    declare context: React.ContextType<typeof LoggerContext>
+
+    private get logger() {
+        return this.context
+    }
+
     private editorRef: monaco.editor.IStandaloneCodeEditor | null = null
     private monaco: typeof import('monaco-editor') | null = null
     private isRunningParse: boolean = false
@@ -200,7 +208,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
     async parseAndDecoratePromiseAsync(monaco: any, editor: any, waitForUserToStopTyping: number): Promise<boolean> {
         if (this.isRunningParse) {
-            //console.error("cancelled parsing:" + this.isRunningParse);
             return false
         }
 
@@ -221,18 +228,15 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             } while (lastUpdateCounter !== this.updateCounter)
 
             if (this.parseCancelToken.cancel) {
-                //console.error("cancelled parsing");
                 return false
             }
 
             // Call sync method
             return this.parseAndDecoratePromise(monaco, editor, lastUpdateCounter)
         } catch (error) {
-            //console.error(error);
             return false
         } finally {
             this.isRunningParse = false
-            //console.error("end parsing:" + this.isRunningParse);
         }
     }
 
@@ -278,7 +282,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         const parser = new SqlBaseParser(tokenStream)
 
         // Pass the current catalog and schema to the listener
-        const listener = new SqlBaseListenerImpl(this.props.catalog, this.props.schema)
+        const listener = new SqlBaseListenerImpl(this.logger, this.props.catalog, this.props.schema)
 
         parser.addParseListener(listener)
         // Remove default error listeners for SQL and add our custom one
@@ -310,7 +314,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             const lexerWithChar = new SqlBaseLexer(inputStreamWithChar)
             const tokenStreamWithChar = new CommonTokenStream(lexerWithChar)
             const parserWithChar = new SqlBaseParser(tokenStreamWithChar)
-            const listenerWithChar = new SqlBaseListenerImpl(this.props.catalog, this.props.schema)
+            const listenerWithChar = new SqlBaseListenerImpl(this.logger, this.props.catalog, this.props.schema)
             parserWithChar.addParseListener(listenerWithChar)
             parserWithChar.removeErrorListeners()
             const treeWithChar = parserWithChar.singleStatement()
@@ -322,7 +326,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             )
             statements = listenerWithChar.statements
             namedQueries = listenerWithChar.namedQueries
-            //console.log("created phantom");
         } else {
             // symbol covering caret position
             currentTreePosition = this.parseTreeFromPosition(tree, caretPosition.column, caretPosition.lineNumber)
@@ -330,7 +333,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
         if (currentTreePosition != undefined && currentTreePosition.symbol != undefined) {
             currentTreeIndex = currentTreePosition.symbol.tokenIndex
-            //console.log("found symbol at " + currentTreePosition.symbol.tokenIndex);
         } else {
             currentTreeIndex = currentTreePosition.ruleIndex
         }
@@ -431,8 +433,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         namedQueries: Map<string, NamedQuery>
     ) {
         // At the beginning:
-        // console.log("Generating autocomplete candidates");
-        // console.log("Word bounds passed:", startWordColumn, "to", endWord);
         const endWordLineOffset: number = endWord + 1
 
         const keywords: string[] = []
@@ -493,8 +493,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             }
         }
 
-        //console.log("Keyword completion items:", completionItems.length);
-
         // check if parent is the parser's TableNameContext
         if (this.checkForParentOfContext(currentTreePosition, TableNameContext)) {
             // loop through all tables in the catalog
@@ -535,13 +533,12 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             }
         }
 
-        //console.log("After table names, completion items:", completionItems.length);
         for (const statement of statements) {
-            console.log(statement)
+            this.logger.debug(statement)
             // log location of caret vs statement position
-            console.log('caret: ' + caretPosition.column + ' ' + caretPosition.lineNumber)
-            console.log('statement start: ' + statement.start.column + ' ' + statement.start.line)
-            console.log('statement end: ' + statement.end.column + ' ' + statement.end.line)
+            this.logger.debug('caret: ' + caretPosition.column + ' ' + caretPosition.lineNumber)
+            this.logger.debug('statement start: ' + statement.start.column + ' ' + statement.start.line)
+            this.logger.debug('statement end: ' + statement.end.column + ' ' + statement.end.line)
 
             // if inside ColumnReferenceContext, we can use the table name to get the columns
             if (
@@ -549,7 +546,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 (caretPosition.column <= statement.end.column && statement.end.line == caretPosition.lineNumber) ||
                 (caretPosition.lineNumber > statement.start.line && caretPosition.lineNumber < statement.end.line)
             ) {
-                console.log('Found statement')
+                this.logger.debug('Found statement')
 
                 const tableName: string = statement.tableName
                 let tableReference: TableReference | undefined
@@ -561,13 +558,46 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 }
 
                 if (tableReference) {
-                    SchemaProvider.getTableWithCache(tableReference, (table: Table) => {
-                        for (const column of table.getColumns()) {
+                    SchemaProvider.getTableWithCache(
+                        tableReference,
+                        (table: Table) => {
+                            for (const column of table.getColumns()) {
+                                completionItems.push(
+                                    new CompletionItemImpl(
+                                        column.getName(),
+                                        monaco.languages.CompletionItemKind.Field,
+                                        column.getName(),
+                                        monaco.languages.CompletionItemInsertTextRule.None,
+                                        {
+                                            insert: {
+                                                startLineNumber: caretPosition.lineNumber,
+                                                startColumn: startWordColumn,
+                                                endLineNumber: caretPosition.lineNumber,
+                                                endColumn: endWordLineOffset,
+                                            },
+                                            replace: {
+                                                startLineNumber: caretPosition.lineNumber,
+                                                startColumn: startWordColumn,
+                                                endLineNumber: caretPosition.lineNumber,
+                                                endColumn: endWordLineOffset,
+                                            },
+                                        }
+                                    )
+                                )
+                            }
+
+                            const singleListOfColumnsJoinedByCommas: string =
+                                '\n    ' +
+                                table
+                                    .getColumns()
+                                    .map((column: Column) => column.getName())
+                                    .join('\n   ,')
+
                             completionItems.push(
                                 new CompletionItemImpl(
-                                    column.getName(),
+                                    singleListOfColumnsJoinedByCommas,
                                     monaco.languages.CompletionItemKind.Field,
-                                    column.getName(),
+                                    singleListOfColumnsJoinedByCommas + ' ',
                                     monaco.languages.CompletionItemInsertTextRule.None,
                                     {
                                         insert: {
@@ -585,38 +615,9 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                                     }
                                 )
                             )
-                        }
-
-                        const singleListOfColumnsJoinedByCommas: string =
-                            '\n    ' +
-                            table
-                                .getColumns()
-                                .map((column: Column) => column.getName())
-                                .join('\n   ,')
-
-                        completionItems.push(
-                            new CompletionItemImpl(
-                                singleListOfColumnsJoinedByCommas,
-                                monaco.languages.CompletionItemKind.Field,
-                                singleListOfColumnsJoinedByCommas + ' ',
-                                monaco.languages.CompletionItemInsertTextRule.None,
-                                {
-                                    insert: {
-                                        startLineNumber: caretPosition.lineNumber,
-                                        startColumn: startWordColumn,
-                                        endLineNumber: caretPosition.lineNumber,
-                                        endColumn: endWordLineOffset,
-                                    },
-                                    replace: {
-                                        startLineNumber: caretPosition.lineNumber,
-                                        startColumn: startWordColumn,
-                                        endLineNumber: caretPosition.lineNumber,
-                                        endColumn: endWordLineOffset,
-                                    },
-                                }
-                            )
-                        )
-                    })
+                        },
+                        this.logger
+                    )
                 }
             }
         }
@@ -643,11 +644,10 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         }
 
         // At the very end of the method:
-        console.log('Final completion items:', completionItems.length)
+        this.logger.debug('Final completion items:', completionItems.length)
     }
 
     cancelParsing() {
-        //console.error("CANCEL");
         this.parseCancelToken.cancel = true
         this.isRunningParse = false
     }
@@ -722,9 +722,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         editor.onDidChangeModelContent(async (e: any) => {
             this.updateCounter++
             this.handleEditorChange(editor.getValue())
-            await this.parseAndDecoratePromiseAsync(monaco, editor, 200).then((result) => {
-                //console.log("done parsing");
-            })
+            await this.parseAndDecoratePromiseAsync(monaco, editor, 200)
         })
 
         editor.onDidChangeCursorSelection(() => {
@@ -744,9 +742,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         })
 
         // init the parser once to get the initial state
-        this.parseAndDecoratePromiseAsync(monaco, editor, 0).then((result) => {
-            //console.log("done parsing");
-        })
+        this.parseAndDecoratePromiseAsync(monaco, editor, 0)
     }
 
     parseTreeFromPosition(
@@ -820,7 +816,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                 // Trigger a save to update the query in state
                 this.handleEditorChange(formattedSql)
             } catch (error) {
-                console.error('Error formatting SQL:', error)
+                this.logger.error('Failed to format SQL', error)
             }
         }
     }
@@ -856,7 +852,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                         },
                     ])
                 } catch (error) {
-                    console.error('Error formatting selection:', error)
+                    this.logger.error('Failed to format selected SQL', error)
                 }
             }
         }
