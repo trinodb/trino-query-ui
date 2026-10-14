@@ -1,3 +1,4 @@
+import { LoggerContext } from './utils/LoggerContext'
 import React from 'react'
 import {
     Alert,
@@ -36,6 +37,13 @@ interface ResultSetProps {
 }
 
 class ResultSet extends React.Component<ResultSetProps> {
+    static contextType = LoggerContext
+    declare context: React.ContextType<typeof LoggerContext>
+
+    private get logger() {
+        return this.context
+    }
+
     previousRunningPercentage: number = 0
     statsHistory: any[] = []
     lastQueryId: string | undefined = undefined
@@ -288,10 +296,10 @@ class ResultSet extends React.Component<ResultSetProps> {
                 }),
             ])
             .then(() => {
-                console.log('Table copied successfully')
+                this.logger.debug('Table copied successfully')
             })
             .catch((err) => {
-                console.error('Failed to copy table:', err)
+                this.logger.error('Failed to copy results to clipboard', err, { queryId: this.props.queryId })
             })
     }
 

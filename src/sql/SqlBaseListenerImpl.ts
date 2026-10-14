@@ -1,3 +1,4 @@
+import { Logger } from '../utils/logger'
 import { SqlBaseListener } from '../generated/lexer/SqlBase.g4/SqlBaseListener'
 import SpecialHighlight from './SpecialHighlight'
 import {
@@ -24,7 +25,11 @@ class SqlBaseListenerImpl extends SqlBaseListener {
     currentCatalog?: string
     currentSchema?: string
 
-    constructor(catalog?: string, schema?: string) {
+    constructor(
+        private logger: Logger,
+        catalog?: string,
+        schema?: string
+    ) {
         super()
         this.specialHighlights = []
         this.namedQueries = new Map<string, NamedQuery>()
@@ -44,6 +49,7 @@ class SqlBaseListenerImpl extends SqlBaseListener {
                 ctx.stop.column + (ctx.stop.stop - ctx.stop.start),
                 'qualifiedName',
                 ctx,
+                this.logger,
                 this.currentCatalog,
                 this.currentSchema
             )
@@ -65,7 +71,7 @@ class SqlBaseListenerImpl extends SqlBaseListener {
 
             this.currentTableNameContext = name
             // Try to populate the cache
-            SchemaProvider.getTableIfCached(tableRef)
+            SchemaProvider.getTableIfCached(tableRef, this.logger)
             this.tableColumns.set(name, this.currentColumns)
             this.currentColumns = []
         }

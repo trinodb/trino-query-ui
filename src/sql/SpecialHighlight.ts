@@ -1,3 +1,4 @@
+import { Logger } from '../utils/logger'
 import NamedQuery from './NamedQuery'
 import SchemaProvider from './SchemaProvider'
 import TableReference from '../schema/TableReference'
@@ -20,6 +21,7 @@ class SpecialHighlight {
         endColumn: number,
         kind: string,
         ast: any,
+        private logger: Logger,
         catalog?: string,
         schema?: string
     ) {
@@ -54,7 +56,7 @@ class SpecialHighlight {
 
         let hoverMessage = ''
         if (tableReference) {
-            const table = SchemaProvider.getTableIfCached(tableReference)
+            const table = SchemaProvider.getTableIfCached(tableReference, this.logger)
             if (table) {
                 hoverMessage = table.getFullSchemaAsString()
             }
