@@ -258,7 +258,7 @@ the cause is fixed.
 Bump the version from the repository root:
 
 ```shell
-npm version 2.0.0 --no-git-tag-version
+npm version 4.0.0 --no-git-tag-version
 ```
 
 Use `npm version` instead of editing **package.json** by hand, so that
@@ -267,9 +267,9 @@ otherwise, because the release workflow installs with `npm ci`, which never
 writes to the lockfile. The `--no-git-tag-version` flag skips the commit and
 tag, since the workflow creates the tag from the merged commit.
 
-Commit both changed files with a `Release @trinodb/trino-query-ui 2.0.0`
+Commit both changed files with a `Release @trinodb/trino-query-ui 4.0.0`
 message, open a pull request, and merge it after review. Name the package in
-the message rather than writing `Release v2.0.0`, because release commits are
+the message rather than writing `Release v4.0.0`, because release commits are
 read in aggregated views where the repository name is not visible. The new
 version then appears on
 [npm](https://www.npmjs.com/package/@trinodb/trino-query-ui).
