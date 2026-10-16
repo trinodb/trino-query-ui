@@ -1,6 +1,6 @@
 import { LoggerContext } from './utils/LoggerContext'
 import React from 'react'
-import { Box, Stack, Tooltip, IconButton } from '@mui/material'
+import { Alert, Box, IconButton, Link, Snackbar, Stack, Tooltip } from '@mui/material'
 import CodeIcon from '@mui/icons-material/Code'
 import Maximize from '@mui/icons-material/Maximize'
 import Minimize from '@mui/icons-material/Minimize'
@@ -28,6 +28,7 @@ import { formatSql } from './sql/formatSql'
 
 const TRINO_SQL_LANGUAGE = 'trinosql'
 const TABS_HEIGHT = 64
+const NEW_ISSUE_URL = 'https://github.com/trinodb/trino-query-ui/issues/new'
 
 interface QueryEditorPaneProps {
     queries: Queries
@@ -46,6 +47,7 @@ interface QueryEditorPaneState {
     isMaximized: boolean
     height: number
     width: string
+    formatError: string | null
 }
 
 // create a private class that extends CompletionItem
@@ -121,6 +123,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             isMaximized: false,
             height: this.props.maxHeight / 2,
             width: '100%',
+            formatError: null,
         }
     }
 
@@ -810,8 +813,10 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
 
                 // Trigger a save to update the query in state
                 this.handleEditorChange(formattedSql)
+                this.closeFormatError()
             } catch (error) {
                 this.logger.error('Failed to format SQL', error)
+                this.showFormatError(error)
             }
         }
     }
@@ -841,11 +846,21 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                             forceMoveMarkers: true,
                         },
                     ])
+                    this.closeFormatError()
                 } catch (error) {
                     this.logger.error('Failed to format selected SQL', error)
+                    this.showFormatError(error)
                 }
             }
         }
+    }
+
+    showFormatError = (error: unknown) => {
+        this.setState({ formatError: error instanceof Error ? error.message : String(error) })
+    }
+
+    closeFormatError = () => {
+        this.setState({ formatError: null })
     }
 
     handleHeightChange = (maxHeight: number) => {
@@ -857,7 +872,7 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
             selectOnLineNumbers: true,
         }
 
-        const { currentQuery, isMaximized, height, width } = this.state
+        const { currentQuery, isMaximized, height, width, formatError } = this.state
 
         return (
             <>
@@ -930,6 +945,18 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
                         />
                     </Box>
                 </Box>
+                <Snackbar open={formatError !== null} onClose={this.closeFormatError}>
+                    <Alert severity="warning" onClose={this.closeFormatError} sx={{ whiteSpace: 'pre-line' }}>
+                        The query could not be formatted and was left unchanged.
+                        {'\n'}
+                        {formatError}
+                        {'\n'}
+                        <Link href={NEW_ISSUE_URL} target="_blank" rel="noopener noreferrer">
+                            Report the problem
+                        </Link>{' '}
+                        so we can improve formatting.
+                    </Alert>
+                </Snackbar>
             </>
         )
     }
