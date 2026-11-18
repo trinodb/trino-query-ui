@@ -657,10 +657,6 @@ class QueryEditorPane extends React.Component<QueryEditorPaneProps, QueryEditorP
         this.setEditorRef(editor)
 
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-            this.props.onExecute()
-        })
-
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
             // execute the query on ctrl+enter
             this.props.onExecute()
         })
